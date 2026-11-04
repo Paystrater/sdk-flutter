@@ -1,0 +1,55 @@
+{
+  "checkoutPayment": {
+    "id": "rcv_8f3k2m9q4x7v1b6n5c0z2w4e",
+    "transactionType": "incoming_payment",
+    "method": "transfer_to_pay",
+    "status": "succeeded",
+    "merchantName": "Bloom Sneakers",
+    "merchantLogoUrl": "https://cdn.paystrater.com/logos/bloom-sneakers.png",
+    "amount": "25.00",
+    "tokenTicker": "USDC",
+    "chainId": 8453,
+    "chainName": "Base",
+    "fee": "0.12",
+    "feeBearer": "customer",
+    "netAmount": "25.00",
+    "payer": {
+      "name": "Ada Okafor",
+      "email": "ada@example.com"
+    },
+    "transactionId": "7m2n9p4q1r8s5t0u3v6w9x2y",
+    "transferToPay": {
+      "depositAddress": "0x7a3B9c1D2e4F5a6B7c8D9e0F1a2B3c4D5e6F7a8B",
+      "expectedAmount": "25.12",
+      "receivedAmount": "25.12",
+      "depositExpiresAt": "2026-10-30T09:35:00.000Z",
+      "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "tokenDecimals": 6
+    },
+    "reference": "INV-2026-0042",
+    "description": "Order #10293: 2 x Running shoes",
+    "metadata": {
+      "orderId": "ORD-10293"
+    },
+    "checkoutUrl": "https://checkout.paystrater.com/pay/rcv_8f3k2m9q4x7v1b6n5c0z2w4e#key=pk_live_51Hc8xT2eZvKYlo2C",
+    "successUrl": "https://shop.example.com/orders/10293/thanks",
+    "cancelUrl": "https://shop.example.com/cart",
+    "expiresAt": "2026-10-30T09:35:00.000Z",
+    "createdAt": "2026-10-30T09:15:00.000Z",
+    "completedAt": "2026-10-30T09:18:42.000Z",
+    "livemode": true
+  },
+  "transferToPayStart": {
+    "receivePaymentId": "rcv_8f3k2m9q4x7v1b6n5c0z2w4e",
+    "depositAddress": "0x7a3B9c1D2e4F5a6B7c8D9e0F1a2B3c4D5e6F7a8B",
+    "chainId": 8453,
+    "chainName": "Base",
+    "tokenTicker": "USDC",
+    "amount": "25.00",
+    "fee": "0.12",
+    "totalAmount": "25.12",
+    "expiresAt": "2026-10-30T09:35:00.000Z",
+    "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "tokenDecimals": 6
+  }
+}

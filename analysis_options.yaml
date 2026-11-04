@@ -1,0 +1,16 @@
+# Strict analysis with no lint package to install
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    missing_return: error
+    dead_code: warning
+    unused_import: warning
+    unused_local_variable: warning
+
+# The core lints pub.dev scores against, listed here so no lint package is needed
+linter:
+  rules:
+    - curly_braces_in_flow_control_structures

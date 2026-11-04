@@ -1,0 +1,61 @@
+# Scans the plugin's Kotlin and Swift. CodeQL has no Dart support, and its default
+# setup cannot build a Flutter plugin, so this builds the example app, which compiles
+# the plugin's native code. Turn CodeQL's default setup off in the repo's settings:
+# GitHub rejects this workflow's results while it is on.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "27 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            os: ubuntu-latest
+            build: flutter build apk --debug
+          - language: swift
+            os: macos-latest
+            # xcodebuild itself: run through flutter, CodeQL does not see the Swift compiler
+            build: >-
+              xcodebuild build -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug
+              -destination generic/platform=iOS ARCH=arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      # The example's platform folders are generated here and never committed
+      - run: flutter create --platforms=android,ios .
+        working-directory: example
+      # Writes Flutter's Xcode settings and installs the pods, which CodeQL needs done first
+      - if: matrix.language == 'swift'
+        run: flutter build ios --config-only --debug --no-codesign
+        working-directory: example
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: manual
+      # CodeQL only sees compilers it starts itself, so no Gradle or Kotlin daemons
+      - run: ${{ matrix.build }}
+        working-directory: example
+        env:
+          GRADLE_OPTS: -Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy=in-process
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

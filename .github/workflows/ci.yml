@@ -1,0 +1,39 @@
+# Every push and pull request: format, analysis, tests, the shared vectors,
+# pub points and a dry-run publish
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      # The shared core vectors come from @paystrater/react. sdk-react is public;
+      # SDK_REACT_READ_TOKEN is only needed if it is ever made private again.
+      - uses: actions/checkout@v6
+        with:
+          repository: Paystrater/sdk-react
+          path: sdk-react
+          token: ${{ secrets.SDK_REACT_READ_TOKEN || github.token }}
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test example/lib
+      - run: flutter analyze
+      - run: flutter test
+      - run: SDK_REACT_DIR=sdk-react tool/sync_vectors.sh --check
+      - run: dart pub global activate pana && dart pub global run pana --exit-code-threshold 0 .
+      # Show which checked-in files the steps above changed (the runner's Flutter has rewritten
+      # analysis_options.yaml), then check the package exactly as committed
+      - name: Files changed by CI
+        run: git diff --stat
+      - run: git checkout -- .
+      - run: dart pub publish --dry-run

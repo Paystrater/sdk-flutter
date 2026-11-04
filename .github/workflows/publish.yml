@@ -1,0 +1,32 @@
+# Publishes to pub.dev from a version tag, with pub.dev's
+# automated publishing over OIDC: no personal credentials in GitHub. Tag
+# v1.2.3 publishes version 1.2.3 of pubspec.yaml.
+name: Publish to pub.dev
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pub.dev
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      # Gives `dart pub publish` the GitHub OIDC token pub.dev accepts
+      - uses: dart-lang/setup-dart@v1
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter test
+      - name: The tag matches pubspec.yaml
+        run: test "v$(grep '^version:' pubspec.yaml | awk '{print $2}')" = "$GITHUB_REF_NAME"
+      # Publish exactly what the tag points at, whatever the steps above rewrote
+      - name: Files changed by CI
+        run: git diff --stat
+      - run: git checkout -- .
+      - run: dart pub publish --force

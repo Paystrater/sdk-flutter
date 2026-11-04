@@ -1,0 +1,13 @@
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+*.iml
+.idea/
+.DS_Store
+example/.dart_tool/
+example/build/
+# CI checks out @paystrater/react here for the shared vectors; never part of the package
+/sdk-react/

@@ -1,0 +1,14 @@
+name: paystrater_flutter_example
+description: A small app that shows the Paystrater checkout.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  paystrater_flutter:
+    path: ../
