@@ -1,3 +1,7 @@
+## 0.1.0-dev.4
+
+- Restyled the checkout to the refreshed Paystrater theme
+
 ## 0.1.0-dev.3
 
 - Show the error and Try again when the first read fails, and keep retrying it.
