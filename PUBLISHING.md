@@ -14,6 +14,15 @@ flutter analyze && flutter test && dart pub publish --dry-run
 
 **3. Merge.** Commit, push `dev`, and merge it into `main` by pull request once CI passes.
 
+```bash
+git add -A
+git commit -m "feat: <what changed>"
+git push origin dev
+gh pr create --base main --head dev --fill
+gh pr merge --merge   # once CI is green
+```
+
+
 **4. Tag `main`.** The tag must be `v` plus the version in `pubspec.yaml`.
 
 ```bash
@@ -22,10 +31,26 @@ git checkout main && git pull && git tag v0.1.0-dev.2 && git push origin v0.1.0-
 
 **5. Approve.** Approve the **Publish to pub.dev** job in GitHub. It runs the tests, checks the tag matches `pubspec.yaml`, and publishes. The version then appears on the package's page on pub.dev.
 
+There is no `latest` tag to move: pub.dev has no dist-tags. `flutter pub add paystrater_flutter`, which setups and the docs use, takes the newest stable version, or the newest pre-release while no stable version exists. After `1.0.0`, a `-dev` release is only installed by someone who asks for it.
+
 Before the first stable release, test a `dev` version on staging with test keys (`pk_test_…` and a payment created on `https://staging-api.paystrater.com`) on an Android and an iOS device.
 
 ```bash
 cd example && flutter run --dart-define=PAYSTRATER_PK=pk_test_… --dart-define=PAYMENT_ID=rcv_…
+```
+
+## When the API changes
+
+There is no types script here: the Dart models in `lib/src/models.dart` and the calls in `lib/src/client.dart` are written by hand, and the shared test vectors keep them in step with `@paystrater/react`. When the Developer API changes:
+
+1. Follow it in `sdk-react` first (`npm run types`, plus `test/vectors/core.json` if the core's behaviour changed), and merge it.
+2. Copy the vectors here and update the models and client to match:
+
+```bash
+tool/sync_vectors.sh            # copies ../sdk-react/test/vectors/core.json
+tool/sync_vectors.sh --check    # what CI runs: fails while the copy differs
+flutter analyze && flutter test
+git add test/vectors lib && git commit -m "feat: follow the API's <change>"
 ```
 
 ## If a release fails
