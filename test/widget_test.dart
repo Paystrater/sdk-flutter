@@ -156,6 +156,8 @@ void main() {
 
   test('the default theme is the Paystrater design and passes WCAG AA', () {
     expect(PaystraterTheme.light.colorPrimary, const Color(0xFF285BB6));
+    expect(PaystraterTheme.dark.colorPrimary, const Color(0xFFA2AED1));
+    expect(PaystraterTheme.dark.colorOnPrimary, const Color(0xFF0A1224));
     expect(contrastWarnings(PaystraterTheme.light), isEmpty);
     expect(contrastWarnings(PaystraterTheme.dark), isEmpty);
     expect(
