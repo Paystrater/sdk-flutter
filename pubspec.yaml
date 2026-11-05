@@ -1,6 +1,6 @@
 name: paystrater_flutter
 description: Paystrater checkout for Flutter. Pay with Paystrater and Transfer to Pay on a publishable key, with no dependencies beyond Flutter.
-version: 0.1.0-dev.3
+version: 0.1.0-dev.4
 homepage: https://docs.paystrater.com/docs/sdks/flutter
 repository: https://github.com/Paystrater/sdk-flutter
 issue_tracker: https://github.com/Paystrater/sdk-flutter/issues
