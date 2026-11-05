@@ -220,6 +220,9 @@ class Checkout extends ChangeNotifier {
   static const _slowUnder = 50;
   static const _maxBackoff = Duration(seconds: 30);
 
+  /// Reads to keep at the slow pace after a limit that sends no RateLimit headers, about two minutes.
+  static const _slowReadsAfterLimit = 12;
+
   CheckoutPayment? _payment;
   TransferToPayStart? _started;
   String? _chosen;
@@ -232,6 +235,8 @@ class Checkout extends ChangeNotifier {
   VoidCallback? _stopActivity;
   bool _running = false;
   int _failures = 0;
+  int _slowReads = 0;
+  PaystraterError? _readFailure;
   String? _lastStatus;
 
   // ---- state ----
@@ -428,9 +433,16 @@ class Checkout extends ChangeNotifier {
     final data = res.data;
     if (data != null) {
       _failures = 0;
-      if (_error != null && _error!.kind != ErrorKind.api) _error = null;
+      // A failed read has passed; an action's error stays until the next action
+      final shown = _error;
+      if (shown != null &&
+          (shown.kind != ErrorKind.api || identical(shown, _readFailure))) {
+        _error = null;
+      }
       _observe(data);
-      _schedule(_slowed ? _slowPoll : _pollEvery);
+      final slow = _slowed || _slowReads > 0;
+      if (_slowReads > 0) _slowReads--;
+      _schedule(slow ? _slowPoll : _pollEvery);
       return;
     }
     final error = res.error!;
@@ -446,6 +458,10 @@ class Checkout extends ChangeNotifier {
       return;
     }
     _failures++;
+    _readFailure = error;
+    if (error.status == 429 || error.status == 403) {
+      _slowReads = _slowReadsAfterLimit;
+    }
     _error = error;
     notifyListeners();
     // 429: wait Retry-After; network and 5xx: back off
@@ -493,8 +509,9 @@ class Checkout extends ChangeNotifier {
   void _schedule(Duration wait) {
     _clearTimer();
     final status = _payment?.status;
-    // Every status but a final one keeps the page reading, unknown ones included
-    if (!_running || status == null || isFinalStatus(status)) return;
+    // Every status but a final one keeps the page reading, unknown ones included;
+    // no payment yet means the first read failed: keep trying
+    if (!_running || (status != null && isFinalStatus(status))) return;
     _timer = Timer(wait, () => unawaited(_read()));
   }
 

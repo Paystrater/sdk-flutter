@@ -31,6 +31,9 @@ class PaystraterError {
   final int? retryAfter;
 }
 
+const _blockedMessage =
+    'Too many requests from your network. Wait a moment, then try again.';
+
 const genericSetupMessage =
     'This checkout is not set up correctly. Ask the shop for a new link.';
 
@@ -242,6 +245,12 @@ class PaystraterClient implements CheckoutApi {
         final err = map['error'] is Map<String, Object?>
             ? map['error']! as Map<String, Object?>
             : const <String, Object?>{};
+        // A 403 with no Paystrater error body came from in front of the API (a per-IP block), so it will pass
+        if (response.statusCode == 403 && err['message'] is! String) {
+          return CallResult<T>.fail(
+              const PaystraterError(ErrorKind.network, 403, _blockedMessage),
+              rateLimit: rate);
+        }
         final message =
             err['message'] is String && (err['message']! as String).isNotEmpty
                 ? err['message']! as String
