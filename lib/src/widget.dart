@@ -562,33 +562,37 @@ class _Body extends StatelessWidget {
     return _Alert(text: errorForPayer(e, c.mode), s: s);
   }
 
+  Widget get _problem {
+    final e = c.error;
+    final retry = e != null &&
+        (e.kind == ErrorKind.network ||
+            e.kind == ErrorKind.timeout ||
+            e.status >= 500);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _title(t['errorTitle']),
+      if (e != null) _Alert(text: errorForPayer(e, c.mode), s: s),
+      if (retry)
+        _Button(
+            label: t['tryAgain'],
+            onPressed: c.refresh,
+            s: s,
+            kind: _Kind.secondary),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final methods = c.methods.where(_mobileMethods.contains).toList();
     switch (c.stage) {
       case Stage.loading:
+        // The first read failed: say so, and keep trying behind the message
+        if (c.error != null) return _problem;
         return Center(
             child: Semantics(
                 label: t['loading'],
                 child: CircularProgressIndicator(color: s.theme.colorPrimary)));
       case Stage.unavailable:
-        final e = c.error;
-        final retry = e != null &&
-            (e.kind == ErrorKind.network ||
-                e.kind == ErrorKind.timeout ||
-                e.status >= 500);
-        return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _title(t['errorTitle']),
-              if (e != null) _Alert(text: errorForPayer(e, c.mode), s: s),
-              if (retry)
-                _Button(
-                    label: t['tryAgain'],
-                    onPressed: c.refresh,
-                    s: s,
-                    kind: _Kind.secondary),
-            ]);
+        return _problem;
       case Stage.methods:
         return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

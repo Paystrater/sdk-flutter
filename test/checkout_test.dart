@@ -243,6 +243,66 @@ void main() {
     c.dispose();
   });
 
+  testWidgets('keeps polling after a block in front of the API, then clears it',
+      (tester) async {
+    var blocked = true;
+    final api = FakeApi(
+        read: () => blocked
+            ? CallResult<CheckoutPayment>.fail(const PaystraterError(
+                ErrorKind.network, 403, 'Too many requests from your network.'))
+            : okPayment());
+    final c = make(api)..start();
+    await tester.pump();
+    expect(c.stage, Stage.loading);
+    expect(c.error?.status, 403);
+    blocked = false;
+    await tester.pump(const Duration(seconds: 30));
+    expect(c.stage, Stage.methods);
+    expect(c.error, isNull);
+    c.dispose();
+  });
+
+  testWidgets('clears a passing 429 once a read succeeds', (tester) async {
+    var n = 0;
+    final api = FakeApi(
+        read: () => n++ == 0
+            ? failWith(429, 'Too many requests.', retryAfter: 60)
+            : okPayment());
+    final c = make(api)..start();
+    await tester.pump();
+    expect(c.error?.status, 429);
+    await tester.pump(const Duration(seconds: 60));
+    expect(c.stage, Stage.methods);
+    expect(c.error, isNull);
+    c.dispose();
+  });
+
+  testWidgets('polls every 10 seconds for about two minutes after a 429',
+      (tester) async {
+    var n = 0;
+    final api = FakeApi(
+        read: () => n++ == 1
+            ? failWith(429, 'Too many requests.', retryAfter: 11)
+            : okPayment());
+    final c = make(api)..start();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 4));
+    expect(api.reads, 2);
+    await tester.pump(const Duration(seconds: 11));
+    expect(api.reads, 3);
+    await tester.pump(const Duration(seconds: 9));
+    expect(api.reads, 3);
+    await tester.pump(const Duration(seconds: 1));
+    expect(api.reads, 4);
+    for (var i = 0; i < 11; i++) {
+      await tester.pump(const Duration(seconds: 10));
+    }
+    expect(api.reads, 15);
+    await tester.pump(const Duration(seconds: 4));
+    expect(api.reads, 16);
+    c.dispose();
+  });
+
   testWidgets('waits for Retry-After on a 429', (tester) async {
     var n = 0;
     final api = FakeApi(

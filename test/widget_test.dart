@@ -132,6 +132,21 @@ void main() {
     }
   });
 
+  testWidgets('shows the error and Try again when the first read fails',
+      (tester) async {
+    await tester.pumpWidget(host(PaystraterCheckout(
+        paymentId: id,
+        publishableKey: 'pk_test_x',
+        api: FakeApi(
+            read: () => CallResult<CheckoutPayment>.fail(const PaystraterError(
+                ErrorKind.network, 0, "We couldn't reach Paystrater."))))));
+    await tester.pump();
+    expect(find.textContaining("couldn't reach Paystrater"), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('refuses a secret key and says why', (tester) async {
     await tester.pumpWidget(host(const PaystraterCheckout(
         paymentId: id, publishableKey: 'sk_live_oops')));
