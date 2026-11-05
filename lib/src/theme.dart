@@ -1,6 +1,7 @@
-// PaystraterTheme: the same variable names as the web's
-// Appearance API, with the Paystrater design from the dashboard's
-// globals.css as the default.
+// PaystraterTheme: the same variable names as the web's Appearance API, with
+// the Paystrater design from the landing page and app refresh as the default:
+// bordered, rounded panels with no shadows, #285BB6 in light mode and #A2AED1
+// with ink text in dark mode.
 import 'package:flutter/widgets.dart';
 
 enum PaystraterThemeMode { light, dark, auto }
@@ -29,11 +30,11 @@ class PaystraterTheme {
 
   static const light = PaystraterTheme(
     colorBackground: Color(0xFFFFFFFF),
-    colorSurface: Color(0xFFF3F4F6),
+    colorSurface: Color(0xFFF4F4F1),
     colorText: Color(0xFF111318),
     colorTextBody: Color(0xFF3A3F4A),
     colorTextMuted: Color(0xFF636975),
-    colorBorder: Color(0xFFDADCE2),
+    colorBorder: Color(0xFFE2E2DD),
     colorPrimary: Color(0xFF285BB6),
     colorPrimaryHover: Color(0xFF1D4693),
     colorOnPrimary: Color(0xFFFFFFFF),
@@ -46,15 +47,15 @@ class PaystraterTheme {
 
   static const dark = PaystraterTheme(
     colorBackground: Color(0xFF0C0D10),
-    colorSurface: Color(0xFF1B1D23),
+    colorSurface: Color(0xFF1C1E24),
     colorText: Color(0xFFF2F3F5),
     colorTextBody: Color(0xFFC4C8D0),
     colorTextMuted: Color(0xFF8E94A0),
-    colorBorder: Color(0xFF2E313A),
-    // Filled buttons keep the saturated blue with white text in dark mode too
-    colorPrimary: Color(0xFF285BB6),
-    colorPrimaryHover: Color(0xFF3A6CC4),
-    colorOnPrimary: Color(0xFFFFFFFF),
+    colorBorder: Color(0xFF272931),
+    // Filled buttons are the periwinkle from the landing page and app with ink text: 8.5:1
+    colorPrimary: Color(0xFFA2AED1),
+    colorPrimaryHover: Color(0xFFB8C3E0),
+    colorOnPrimary: Color(0xFF0A1224),
     colorPrimaryText: Color(0xFFA2AED1),
     colorPrimarySoft: Color(0xFF182136),
     colorSuccess: Color(0xFF4ADEA0),
