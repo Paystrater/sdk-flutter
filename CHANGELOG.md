@@ -1,3 +1,7 @@
+## 0.1.0-dev.5
+
+- First published version with the refreshed theme. `0.1.0-dev.4` was never published.
+
 ## 0.1.0-dev.4
 
 - Restyled the checkout to the refreshed Paystrater theme
