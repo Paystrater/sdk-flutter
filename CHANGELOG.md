@@ -1,6 +1,7 @@
 ## 0.1.0-dev.6
 
 - Default theme follows the updated design guideline
+- The checkout no longer uses Material (deprecated in Flutter 3.47). It is drawn with Flutter's widgets library only, so it works in Material, Cupertino or plain apps and still needs Flutter 3.22 or later with no other dependencies. The text fields have their own Cut, Copy, Paste and Select all menu, and the amount and token contract get Copy links
 
 ## 0.1.0-dev.5
 
