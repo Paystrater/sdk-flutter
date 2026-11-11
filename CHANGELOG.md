@@ -1,3 +1,7 @@
+## 0.1.0-dev.6
+
+- Default theme follows the updated design guideline
+
 ## 0.1.0-dev.5
 
 - First published version with the refreshed theme. `0.1.0-dev.4` was never published.
