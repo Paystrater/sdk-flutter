@@ -47,6 +47,10 @@ const Map<String, String> paystraterStringsEn = {
   'sendExactly': 'Send exactly {amount} {token} on {chain}',
   'depositAddress': 'Deposit address',
   'copy': 'Copy',
+  // The text field's edit menu. Flutter only: on the web the browser draws it
+  'cut': 'Cut',
+  'paste': 'Paste',
+  'selectAll': 'Select all',
   'copyAddress': 'Copy address',
   'copied': 'Copied',
   'copyAmount': 'Copy amount',

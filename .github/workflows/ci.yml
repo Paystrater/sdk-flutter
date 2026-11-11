@@ -27,7 +27,8 @@ jobs:
         with:
           channel: stable
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib test example/lib
+      # Formats, then fails with the full diff in the log, so a fix needs no local Flutter
+      - run: dart format lib test example/lib && git diff --exit-code -- lib test example/lib
       - run: flutter analyze
       - run: flutter test
       - run: SDK_REACT_DIR=sdk-react tool/sync_vectors.sh --check

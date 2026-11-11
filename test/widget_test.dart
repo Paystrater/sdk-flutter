@@ -1,12 +1,22 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paystrater_flutter/paystrater_flutter.dart';
 
 import 'fakes.dart';
 
-Widget host(Widget child) =>
-    MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child)));
+// A plain WidgetsApp, no Material: the checkout must work in any Flutter app
+Widget host(Widget child) => WidgetsApp(
+      color: const Color(0xFF285BB6),
+      pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) =>
+          PageRouteBuilder<T>(
+              settings: settings,
+              pageBuilder: (context, _, __) => builder(context)),
+      home: SingleChildScrollView(child: child),
+    );
+
+final spinner =
+    find.byWidgetPredicate((w) => w.runtimeType.toString() == '_Spinner');
 
 void main() {
   final calls = <MethodCall>[];
@@ -53,9 +63,7 @@ void main() {
         paymentId: id, publishableKey: 'pk_test_x', api: api)));
     await tester.pump();
     expect(find.text('Send exactly 25.25 USDC on Base'), findsOneWidget);
-    expect(
-        find.widgetWithText(
-            SelectableText, '0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB'),
+    expect(find.text('0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB'),
         findsOneWidget);
     expect(
         find.text('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'), findsNothing);
@@ -63,9 +71,7 @@ void main() {
     expect(calls.map((c) => c.method), contains('share'));
     await tester.tap(find.text('Payment details'));
     await tester.pump();
-    expect(
-        find.widgetWithText(
-            SelectableText, '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'),
+    expect(find.text('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'),
         findsOneWidget);
     // canOpenUrl answered false, so no wallet button
     expect(find.text('Open in wallet'), findsNothing);
@@ -102,7 +108,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Pay with Paystrater'));
     await tester.pump();
-    await tester.enterText(find.byType(TextField), 'ada');
+    await tester.enterText(find.byType(EditableText), 'ada');
     await tester.tap(find.text('Send to my app'));
     await tester.pump();
     await tester.pump();
@@ -143,7 +149,7 @@ void main() {
     await tester.pump();
     expect(find.textContaining("couldn't reach Paystrater"), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(spinner, findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -157,7 +163,7 @@ void main() {
   test('the default theme is the Paystrater design and passes WCAG AA', () {
     expect(PaystraterTheme.light.colorPrimary, const Color(0xFF285BB6));
     expect(PaystraterTheme.dark.colorPrimary, const Color(0xFFA2AED1));
-    expect(PaystraterTheme.dark.colorOnPrimary, const Color(0xFF0A1224));
+    expect(PaystraterTheme.dark.colorOnPrimary, const Color(0xFF131519));
     expect(contrastWarnings(PaystraterTheme.light), isEmpty);
     expect(contrastWarnings(PaystraterTheme.dark), isEmpty);
     expect(

@@ -5,7 +5,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+// Widgets only, no Material: the checkout draws everything from
+// PaystraterTheme, so it needs no design library and works in any Flutter app
+// (Material, Cupertino or neither) with no dependencies beyond Flutter.
+import 'package:flutter/widgets.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
@@ -169,16 +172,23 @@ class _PaystraterCheckoutState extends State<PaystraterCheckout> {
         debugPrint('[Paystrater] $w');
       }
     }
-    return Material(
-      type: MaterialType.transparency,
-      child: ListenableBuilder(
-        listenable: _checkout,
-        builder: (context, _) => _Frame(
-            c: _checkout,
-            t: t,
-            theme: theme,
-            open: _open,
-            onStartAgain: widget.onStartAgain),
+    return DefaultTextStyle(
+      style: TextStyle(
+          fontSize: 15,
+          color: theme.colorTextBody,
+          fontFamily: theme.fontFamily,
+          decoration: TextDecoration.none),
+      child: _MenuStrings(
+        t: t,
+        child: ListenableBuilder(
+          listenable: _checkout,
+          builder: (context, _) => _Frame(
+              c: _checkout,
+              t: t,
+              theme: theme,
+              open: _open,
+              onStartAgain: widget.onStartAgain),
+        ),
       ),
     );
   }
@@ -431,9 +441,10 @@ class _Button extends StatelessWidget {
       enabled: !disabled,
       child: Opacity(
         opacity: disabled ? 0.6 : 1,
-        child: InkWell(
+        child: _Tap(
           onTap: disabled ? null : onPressed,
-          borderRadius: BorderRadius.circular(theme.borderRadius),
+          s: s,
+          radius: theme.borderRadius,
           child: Container(
             constraints: const BoxConstraints(minHeight: 44),
             alignment: link ? Alignment.centerLeft : Alignment.center,
@@ -487,10 +498,6 @@ class _Field extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = s.theme;
-    OutlineInputBorder border(Color c) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(theme.borderRadius),
-        borderSide: BorderSide(color: c));
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -505,22 +512,12 @@ class _Field extends StatelessWidget {
               TextSpan(text: ' ($optional)', style: s.muted),
           ])),
           const SizedBox(height: 6),
-          TextField(
+          _Input(
             controller: controller,
             keyboardType: keyboardType,
-            autocorrect: false,
-            style: s.body.copyWith(color: theme.colorText),
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: hint,
-              hintStyle: s.muted,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              enabledBorder:
-                  border(error == null ? theme.colorBorder : theme.colorDanger),
-              focusedBorder: border(theme.colorPrimaryText),
-              semanticCounterText: '',
-            ),
+            hint: hint,
+            invalid: error != null,
+            s: s,
           ),
           if (help != null)
             Padding(
@@ -590,7 +587,7 @@ class _Body extends StatelessWidget {
         return Center(
             child: Semantics(
                 label: t['loading'],
-                child: CircularProgressIndicator(color: s.theme.colorPrimary)));
+                child: _Spinner(color: s.theme.colorPrimary)));
       case Stage.unavailable:
         return _problem;
       case Stage.methods:
@@ -603,10 +600,10 @@ class _Body extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Semantics(
                     button: true,
-                    child: InkWell(
+                    child: _Tap(
                       onTap: () => c.choose(m),
-                      borderRadius:
-                          BorderRadius.circular(s.theme.borderRadiusSurface),
+                      s: s,
+                      radius: s.theme.borderRadiusSurface,
                       child: Container(
                         constraints: const BoxConstraints(minHeight: 56),
                         padding: const EdgeInsets.all(14),
@@ -676,7 +673,7 @@ class _Body extends StatelessWidget {
               Text(t['agentHint'], style: s.muted),
               if (prompt != null) ...[
                 const SizedBox(height: 12),
-                _Well(s: s, child: SelectableText(prompt, style: s.mono)),
+                _Well(s: s, child: Text(prompt, style: s.mono)),
                 const SizedBox(height: 12),
                 _Button(
                     label: t['copyPrompt'],
@@ -689,7 +686,7 @@ class _Body extends StatelessWidget {
       case Stage.processing:
       case Stage.updating:
         return Column(children: [
-          CircularProgressIndicator(color: s.theme.colorPrimary),
+          _Spinner(color: s.theme.colorPrimary),
           const SizedBox(height: 12),
           _title(c.stage == Stage.processing
               ? t['statusProcessing']
@@ -970,8 +967,10 @@ class _TransferFormState extends State<_TransferForm> {
               inMutuallyExclusiveGroup: true,
               checked: chosen == ch.chainId,
               button: true,
-              child: InkWell(
+              child: _Tap(
                 onTap: () => setState(() => _chainId = ch.chainId),
+                s: s,
+                radius: s.theme.borderRadius,
                 child: Container(
                   constraints: const BoxConstraints(minHeight: 44),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1140,10 +1139,14 @@ class _DepositViewState extends State<_DepositView> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(t['depositAddress'], style: s.muted),
           const SizedBox(height: 6),
-          SelectableText(d.depositAddress, style: s.mono),
+          Text(d.depositAddress, style: s.mono),
           const SizedBox(height: 6),
-          SelectableText('${formatAmount(d.amount)} ${d.tokenTicker}',
-              style: s.muted),
+          Row(children: [
+            Expanded(
+                child: Text('${formatAmount(d.amount)} ${d.tokenTicker}',
+                    style: s.muted)),
+            _CopyLink(label: t['copyAmount'], value: d.amount, t: t, s: s),
+          ]),
         ]),
       ),
       const SizedBox(height: 12),
@@ -1199,8 +1202,7 @@ class _DepositViewState extends State<_DepositView> {
         SizedBox(
             width: 16,
             height: 16,
-            child: CircularProgressIndicator(
-                strokeWidth: 2, color: s.theme.colorPrimary)),
+            child: _Spinner(stroke: 2, color: s.theme.colorPrimary)),
         const SizedBox(width: 8),
         Expanded(
             child: Semantics(
@@ -1219,8 +1221,9 @@ class _DepositViewState extends State<_DepositView> {
       Semantics(
         button: true,
         value: _details ? 'open' : 'closed',
-        child: InkWell(
+        child: _Tap(
           onTap: () => setState(() => _details = !_details),
+          s: s,
           child: Container(
             constraints: const BoxConstraints(minHeight: 44),
             alignment: Alignment.centerLeft,
@@ -1235,7 +1238,9 @@ class _DepositViewState extends State<_DepositView> {
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           if (d.tokenAddress != null) ...[
             Text(t['tokenContract'], style: s.muted),
-            SelectableText(d.tokenAddress!, style: s.mono),
+            Text(d.tokenAddress!, style: s.mono),
+            _CopyLink(
+                label: t['copyContract'], value: d.tokenAddress!, t: t, s: s),
             const SizedBox(height: 6),
           ],
           Text(t['network'], style: s.muted),
@@ -1243,7 +1248,7 @@ class _DepositViewState extends State<_DepositView> {
           if (d.chainId != null) ...[
             const SizedBox(height: 6),
             Text(t['chainId'], style: s.muted),
-            SelectableText('${d.chainId}', style: s.body),
+            Text('${d.chainId}', style: s.body),
           ],
         ]),
       if (widget.actionError != null) widget.actionError!,
@@ -1333,4 +1338,400 @@ class _Result extends StatelessWidget {
       ],
     ]);
   }
+}
+
+/// A tap target in the checkout's own style: hover and press tint, a focus
+/// ring for keyboards, Enter and Space to activate. Replaces Material's InkWell.
+class _Tap extends StatefulWidget {
+  const _Tap(
+      {required this.onTap,
+      required this.s,
+      required this.child,
+      this.radius = 0});
+
+  final VoidCallback? onTap;
+  final _Styles s;
+  final double radius;
+  final Widget child;
+
+  @override
+  State<_Tap> createState() => _TapState();
+}
+
+class _TapState extends State<_Tap> {
+  bool _focused = false;
+  bool _hovered = false;
+  bool _pressed = false;
+
+  void _press(bool v) {
+    if (_pressed != v) setState(() => _pressed = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final onTap = widget.onTap;
+    final enabled = onTap != null;
+    final theme = widget.s.theme;
+    final radius = BorderRadius.circular(widget.radius);
+    return FocusableActionDetector(
+      enabled: enabled,
+      mouseCursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
+      onShowFocusHighlight: (v) => setState(() => _focused = v),
+      onShowHoverHighlight: (v) => setState(() => _hovered = v),
+      actions: <Type, Action<Intent>>{
+        ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (_) {
+          onTap?.call();
+          return null;
+        }),
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        onTapDown: enabled ? (_) => _press(true) : null,
+        onTapUp: enabled ? (_) => _press(false) : null,
+        onTapCancel: enabled ? () => _press(false) : null,
+        child: Container(
+          foregroundDecoration: BoxDecoration(
+            borderRadius: radius,
+            color: enabled && (_pressed || _hovered)
+                ? theme.colorText.withAlpha(_pressed ? 26 : 13)
+                : null,
+            border: _focused
+                ? Border.all(color: theme.colorPrimaryText, width: 2)
+                : null,
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+/// A small indeterminate spinner. Replaces Material's CircularProgressIndicator,
+/// and holds still when the platform asks for reduced motion.
+class _Spinner extends StatefulWidget {
+  const _Spinner({required this.color, this.stroke = 3});
+
+  final Color color;
+  final double stroke;
+
+  @override
+  State<_Spinner> createState() => _SpinnerState();
+}
+
+class _SpinnerState extends State<_Spinner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _turns = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1000));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+      _turns.stop();
+    } else if (!_turns.isAnimating) {
+      _turns.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _turns.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 36,
+        height: 36,
+        child: RotationTransition(
+          turns: _turns,
+          child: CustomPaint(
+              painter: _ArcPainter(color: widget.color, stroke: widget.stroke)),
+        ),
+      );
+}
+
+class _ArcPainter extends CustomPainter {
+  _ArcPainter({required this.color, required this.stroke});
+
+  final Color color;
+  final double stroke;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = (Offset.zero & size).deflate(stroke / 2);
+    canvas.drawArc(
+        rect,
+        0,
+        4.4,
+        false,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke
+          ..strokeCap = StrokeCap.round);
+  }
+
+  @override
+  bool shouldRepaint(_ArcPainter old) =>
+      old.color != color || old.stroke != stroke;
+}
+
+/// A link that copies a value and says Copied for a moment.
+class _CopyLink extends StatefulWidget {
+  const _CopyLink(
+      {required this.label,
+      required this.value,
+      required this.t,
+      required this.s});
+
+  final String label;
+  final String value;
+  final PaystraterStrings t;
+  final _Styles s;
+
+  @override
+  State<_CopyLink> createState() => _CopyLinkState();
+}
+
+class _CopyLinkState extends State<_CopyLink> {
+  bool _copied = false;
+  Timer? _reset;
+
+  @override
+  void dispose() {
+    _reset?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        child: _Tap(
+          s: widget.s,
+          onTap: () async {
+            await Clipboard.setData(ClipboardData(text: widget.value));
+            if (!mounted) return;
+            setState(() => _copied = true);
+            _reset?.cancel();
+            _reset = Timer(const Duration(milliseconds: 1500), () {
+              if (mounted) setState(() => _copied = false);
+            });
+          },
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 44),
+            alignment: Alignment.centerLeft,
+            child: Text(_copied ? widget.t['copied'] : widget.label,
+                style: widget.s.muted.copyWith(
+                    color: widget.s.theme.colorPrimaryText,
+                    fontWeight: FontWeight.w500)),
+          ),
+        ),
+      );
+}
+
+/// A text field in the checkout's own style on EditableText, with the
+/// platform's tap, long-press and drag selection and a small Cut, Copy, Paste
+/// and Select all menu. Replaces Material's TextField.
+class _Input extends StatefulWidget {
+  const _Input(
+      {required this.controller,
+      required this.s,
+      this.keyboardType,
+      this.hint,
+      this.invalid = false});
+
+  final TextEditingController controller;
+  final _Styles s;
+  final TextInputType? keyboardType;
+  final String? hint;
+  final bool invalid;
+
+  @override
+  State<_Input> createState() => _InputState();
+}
+
+class _InputState extends State<_Input>
+    implements TextSelectionGestureDetectorBuilderDelegate {
+  final _editable = GlobalKey<EditableTextState>();
+  final _focus = FocusNode();
+  late final _gestures = TextSelectionGestureDetectorBuilder(delegate: this);
+
+  @override
+  GlobalKey<EditableTextState> get editableTextKey => _editable;
+
+  @override
+  bool get forcePressEnabled => false;
+
+  @override
+  bool get selectionEnabled => true;
+
+  void _changed() => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_changed);
+    widget.controller.addListener(_changed);
+  }
+
+  @override
+  void didUpdateWidget(_Input old) {
+    super.didUpdateWidget(old);
+    if (old.controller != widget.controller) {
+      old.controller.removeListener(_changed);
+      widget.controller.addListener(_changed);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_changed);
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+    final theme = s.theme;
+    final border = _focus.hasFocus
+        ? theme.colorPrimaryText
+        : widget.invalid
+            ? theme.colorDanger
+            : theme.colorBorder;
+    return MouseRegion(
+      cursor: SystemMouseCursors.text,
+      child: _gestures.buildGestureDetector(
+        behavior: HitTestBehavior.translucent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: border),
+            borderRadius: BorderRadius.circular(theme.borderRadius),
+          ),
+          child: Stack(children: [
+            if (widget.hint != null && widget.controller.text.isEmpty)
+              ExcludeSemantics(child: Text(widget.hint!, style: s.muted)),
+            EditableText(
+              key: _editable,
+              controller: widget.controller,
+              focusNode: _focus,
+              keyboardType: widget.keyboardType,
+              autocorrect: false,
+              style: s.body.copyWith(color: theme.colorText),
+              cursorColor: theme.colorPrimaryText,
+              backgroundCursorColor: theme.colorTextMuted,
+              selectionColor: theme.colorPrimary.withAlpha(77),
+              selectionControls: emptyTextSelectionControls,
+              rendererIgnoresPointer: true,
+              contextMenuBuilder: (context, state) =>
+                  _EditMenu(state: state, s: s),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditMenu extends StatelessWidget {
+  const _EditMenu({required this.state, required this.s});
+
+  final EditableTextState state;
+  final _Styles s;
+
+  String? _label(ContextMenuButtonType type, PaystraterStrings t) {
+    switch (type) {
+      case ContextMenuButtonType.cut:
+        return t['cut'];
+      case ContextMenuButtonType.copy:
+        return t['copy'];
+      case ContextMenuButtonType.paste:
+        return t['paste'];
+      case ContextMenuButtonType.selectAll:
+        return t['selectAll'];
+      default:
+        return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _MenuStrings.of(state.context);
+    final items = [
+      for (final i in state.contextMenuButtonItems)
+        if (_label(i.type, t) != null) i
+    ];
+    if (items.isEmpty) return const SizedBox.shrink();
+    final theme = s.theme;
+    return CustomSingleChildLayout(
+      delegate: _MenuLayout(state.contextMenuAnchors.primaryAnchor),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorBackground,
+          border: Border.all(color: theme.colorBorder),
+          borderRadius: BorderRadius.circular(theme.borderRadius),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          for (final i in items)
+            Semantics(
+              button: true,
+              child: _Tap(
+                s: s,
+                radius: theme.borderRadius,
+                onTap: i.onPressed,
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 40),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(_label(i.type, t)!,
+                      style: s.strong
+                          .copyWith(fontSize: 14, fontWeight: FontWeight.w500)),
+                ),
+              ),
+            ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Hands the merchant's strings to the edit menu, which is built in the
+/// overlay, away from the checkout's own widgets.
+class _MenuStrings extends InheritedWidget {
+  const _MenuStrings({required this.t, required super.child});
+
+  final PaystraterStrings t;
+
+  static PaystraterStrings of(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<_MenuStrings>()?.t ??
+      PaystraterStrings();
+
+  @override
+  bool updateShouldNotify(_MenuStrings old) => old.t != t;
+}
+
+class _MenuLayout extends SingleChildLayoutDelegate {
+  _MenuLayout(this.anchor);
+
+  final Offset anchor;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      constraints.loosen();
+
+  @override
+  Offset getPositionForChild(Size size, Size child) {
+    final maxX = size.width - child.width - 8;
+    final x = (anchor.dx - child.width / 2)
+        .clamp(8.0, maxX < 8 ? 8.0 : maxX)
+        .toDouble();
+    final above = anchor.dy - child.height - 8;
+    return Offset(x, above < 8 ? anchor.dy + 24 : above);
+  }
+
+  @override
+  bool shouldRelayout(_MenuLayout old) => old.anchor != anchor;
 }
