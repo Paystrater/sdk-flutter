@@ -498,7 +498,6 @@ class _Field extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = s.theme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
