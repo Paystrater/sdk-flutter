@@ -15,8 +15,8 @@ Widget host(Widget child) => WidgetsApp(
       home: SingleChildScrollView(child: child),
     );
 
-final spinner = find.byWidgetPredicate(
-    (w) => w.runtimeType.toString() == '_Spinner');
+final spinner =
+    find.byWidgetPredicate((w) => w.runtimeType.toString() == '_Spinner');
 
 void main() {
   final calls = <MethodCall>[];
@@ -63,8 +63,7 @@ void main() {
         paymentId: id, publishableKey: 'pk_test_x', api: api)));
     await tester.pump();
     expect(find.text('Send exactly 25.25 USDC on Base'), findsOneWidget);
-    expect(
-        find.text('0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB'),
+    expect(find.text('0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB'),
         findsOneWidget);
     expect(
         find.text('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'), findsNothing);
@@ -72,8 +71,7 @@ void main() {
     expect(calls.map((c) => c.method), contains('share'));
     await tester.tap(find.text('Payment details'));
     await tester.pump();
-    expect(
-        find.text('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'),
+    expect(find.text('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'),
         findsOneWidget);
     // canOpenUrl answered false, so no wallet button
     expect(find.text('Open in wallet'), findsNothing);

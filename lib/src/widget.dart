@@ -1603,36 +1603,36 @@ class _InputState extends State<_Input>
             ? theme.colorDanger
             : theme.colorBorder;
     return MouseRegion(
-        cursor: SystemMouseCursors.text,
-        child: _gestures.buildGestureDetector(
-          behavior: HitTestBehavior.translucent,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border.all(color: border),
-              borderRadius: BorderRadius.circular(theme.borderRadius),
-            ),
-            child: Stack(children: [
-              if (widget.hint != null && widget.controller.text.isEmpty)
-                ExcludeSemantics(child: Text(widget.hint!, style: s.muted)),
-              EditableText(
-                key: _editable,
-                controller: widget.controller,
-                focusNode: _focus,
-                keyboardType: widget.keyboardType,
-                autocorrect: false,
-                style: s.body.copyWith(color: theme.colorText),
-                cursorColor: theme.colorPrimaryText,
-                backgroundCursorColor: theme.colorTextMuted,
-                selectionColor: theme.colorPrimary.withAlpha(77),
-                selectionControls: emptyTextSelectionControls,
-                rendererIgnoresPointer: true,
-                contextMenuBuilder: (context, state) =>
-                    _EditMenu(state: state, s: s),
-              ),
-            ]),
+      cursor: SystemMouseCursors.text,
+      child: _gestures.buildGestureDetector(
+        behavior: HitTestBehavior.translucent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: border),
+            borderRadius: BorderRadius.circular(theme.borderRadius),
           ),
+          child: Stack(children: [
+            if (widget.hint != null && widget.controller.text.isEmpty)
+              ExcludeSemantics(child: Text(widget.hint!, style: s.muted)),
+            EditableText(
+              key: _editable,
+              controller: widget.controller,
+              focusNode: _focus,
+              keyboardType: widget.keyboardType,
+              autocorrect: false,
+              style: s.body.copyWith(color: theme.colorText),
+              cursorColor: theme.colorPrimaryText,
+              backgroundCursorColor: theme.colorTextMuted,
+              selectionColor: theme.colorPrimary.withAlpha(77),
+              selectionControls: emptyTextSelectionControls,
+              rendererIgnoresPointer: true,
+              contextMenuBuilder: (context, state) =>
+                  _EditMenu(state: state, s: s),
+            ),
+          ]),
         ),
+      ),
     );
   }
 }
@@ -1688,8 +1688,8 @@ class _EditMenu extends StatelessWidget {
                   alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(_label(i.type, t)!,
-                      style: s.strong.copyWith(
-                          fontSize: 14, fontWeight: FontWeight.w500)),
+                      style: s.strong
+                          .copyWith(fontSize: 14, fontWeight: FontWeight.w500)),
                 ),
               ),
             ),
