@@ -94,7 +94,7 @@ class PaystraterWordmark extends StatelessWidget {
           painter: _VectorPainter(color, _wordmarkBox)));
 }
 
-enum CheckoutIcon { wallet, arrowLeft, chevronRight }
+enum CheckoutIcon { wallet, sparkle, arrowLeft, chevronRight }
 
 /// The checkout's line icons on a 24-unit grid, as lucide draws them.
 class CheckoutIconView extends StatelessWidget {
@@ -139,6 +139,31 @@ class _IconPainter extends CustomPainter {
                 ..lineTo(p(12, 5).dx, p(12, 5).dy),
               paint)
           ..drawLine(p(19, 12), p(5, 12), paint);
+      case CheckoutIcon.sparkle:
+        // A four-point star with softened inner corners, and a small plus
+        canvas
+          ..drawPath(
+              Path()
+                ..moveTo(p(12, 3.5).dx, p(12, 3.5).dy)
+                ..lineTo(p(13.8, 9).dx, p(13.8, 9).dy)
+                ..quadraticBezierTo(p(14.1, 9.9).dx, p(14.1, 9.9).dy,
+                    p(15, 10.2).dx, p(15, 10.2).dy)
+                ..lineTo(p(20.5, 12).dx, p(20.5, 12).dy)
+                ..lineTo(p(15, 13.8).dx, p(15, 13.8).dy)
+                ..quadraticBezierTo(p(14.1, 14.1).dx, p(14.1, 14.1).dy,
+                    p(13.8, 15).dx, p(13.8, 15).dy)
+                ..lineTo(p(12, 20.5).dx, p(12, 20.5).dy)
+                ..lineTo(p(10.2, 15).dx, p(10.2, 15).dy)
+                ..quadraticBezierTo(p(9.9, 14.1).dx, p(9.9, 14.1).dy,
+                    p(9, 13.8).dx, p(9, 13.8).dy)
+                ..lineTo(p(3.5, 12).dx, p(3.5, 12).dy)
+                ..lineTo(p(9, 10.2).dx, p(9, 10.2).dy)
+                ..quadraticBezierTo(p(9.9, 9.9).dx, p(9.9, 9.9).dy,
+                    p(10.2, 9).dx, p(10.2, 9).dy)
+                ..close(),
+              paint)
+          ..drawLine(p(19, 3), p(19, 6), paint)
+          ..drawLine(p(17.5, 4.5), p(20.5, 4.5), paint);
       case CheckoutIcon.chevronRight:
         canvas.drawPath(
             Path()

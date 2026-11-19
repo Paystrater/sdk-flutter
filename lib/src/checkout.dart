@@ -396,6 +396,15 @@ class Checkout extends ChangeNotifier {
     });
   }
 
+  /// Starts an AI agent payment (POST /v1/checkout/agentic): the payment then
+  /// carries the prompt the customer hands to their agent.
+  Future<ActionResult> startAgentic() => _act(() async {
+        final res = await _api.startAgentic({'receivePaymentId': paymentId});
+        final data = res.data;
+        if (data != null) _observe(data);
+        return res;
+      });
+
   // ---- internals ----
 
   Future<ActionResult> _act(Future<CallResult<Object>> Function() run) async {

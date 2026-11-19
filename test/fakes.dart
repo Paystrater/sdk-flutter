@@ -55,12 +55,14 @@ class FakeApi implements CheckoutApi {
       {required this.read,
       this.start,
       this.pay,
+      this.agentic,
       this.keyMode = KeyMode.test,
       this.problem});
 
   CallResult<CheckoutPayment> Function() read;
   CallResult<TransferToPayStart> Function()? start;
   CallResult<CheckoutPayment> Function()? pay;
+  CallResult<CheckoutPayment> Function()? agentic;
   final KeyMode keyMode;
   final PaystraterError? problem;
   int reads = 0;
@@ -93,6 +95,13 @@ class FakeApi implements CheckoutApi {
       {CancelToken? cancel}) async {
     bodies.add(body);
     return pay!();
+  }
+
+  @override
+  Future<CallResult<CheckoutPayment>> startAgentic(Map<String, Object?> body,
+      {CancelToken? cancel}) async {
+    bodies.add(body);
+    return agentic!();
   }
 }
 

@@ -34,7 +34,7 @@ void main() {
   });
 
   testWidgets(
-      'offers Pay with Paystrater and Transfer to Pay, not the agent, with a Test mode ribbon',
+      'offers Pay with Paystrater, Transfer to Pay and an AI agent, with a Test mode chip',
       (tester) async {
     await tester.pumpWidget(host(PaystraterCheckout(
         paymentId: id,
@@ -43,7 +43,9 @@ void main() {
     await tester.pump();
     expect(find.text('Pay with Paystrater'), findsOneWidget);
     expect(find.text('Transfer to Pay'), findsOneWidget);
-    expect(find.text('Pay with an AI agent'), findsNothing);
+    expect(find.text('Pay with an AI agent'), findsOneWidget);
+    expect(
+        find.text('Your agent pays within the limits you set'), findsOneWidget);
     expect(find.text('Test mode'), findsOneWidget);
     expect(find.text('Acme Shoes'), findsOneWidget);
   });
@@ -77,7 +79,7 @@ void main() {
     expect(find.text('Open in wallet'), findsNothing);
   });
 
-  testWidgets('opens the Paystrater app after sending a request',
+  testWidgets('sends the request without opening the app; the button opens it',
       (tester) async {
     final opened = <String>[];
     var sent = false;
@@ -112,8 +114,11 @@ void main() {
     await tester.tap(find.text('Send to my app'));
     await tester.pump();
     await tester.pump();
-    expect(opened, ['https://app.paystrater.com/pay?id=$id']);
     expect(find.text('Sent to Ada Lovelace'), findsOneWidget);
+    expect(opened, isEmpty);
+    await tester.tap(find.text('Open the Paystrater app'));
+    await tester.pump();
+    expect(opened, ['https://app.paystrater.com/pay?id=$id']);
   });
 
   testWidgets('shows the end states', (tester) async {
@@ -136,6 +141,61 @@ void main() {
       await tester.pump();
       expect(find.text(e.value), findsOneWidget, reason: e.value);
     }
+  });
+
+  testWidgets(
+      'starts an AI agent payment, shows the prompt to copy, and goes back before starting',
+      (tester) async {
+    var started = false;
+    final api = FakeApi(
+      read: () => started
+          ? okPayment({
+              'method': 'agentic',
+              'methods': null,
+              'agentPrompt': 'Pay rcv_test0001 for Acme'
+            })
+          : okPayment(),
+      agentic: () {
+        started = true;
+        return okPayment({
+          'method': 'agentic',
+          'methods': null,
+          'agentPrompt': 'Pay rcv_test0001 for Acme'
+        });
+      },
+    );
+    await tester.pumpWidget(host(PaystraterCheckout(
+        paymentId: id, publishableKey: 'pk_test_x', api: api)));
+    await tester.pump();
+    await tester.tap(find.text('Pay with an AI agent'));
+    await tester.pump();
+    expect(
+        find.bySemanticsLabel('Back to payment methods, Pay with an AI agent'),
+        findsOneWidget);
+    expect(find.text('Powered by'), findsOneWidget);
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+    await tester.pump();
+    expect(api.bodies.last, {'receivePaymentId': id});
+    expect(find.text('Pay rcv_test0001 for Acme'), findsOneWidget);
+    expect(find.text('Copy prompt'), findsOneWidget);
+    expect(
+        find.bySemanticsLabel(RegExp('Back to payment methods')), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('goes back from the AI agent step to the methods',
+      (tester) async {
+    await tester.pumpWidget(host(PaystraterCheckout(
+        paymentId: id,
+        publishableKey: 'pk_test_x',
+        api: FakeApi(read: () => okPayment()))));
+    await tester.pump();
+    await tester.tap(find.text('Pay with an AI agent'));
+    await tester.pump();
+    await tester.tap(find.text('Pay with an AI agent'));
+    await tester.pump();
+    expect(find.text('Choose how to pay'), findsOneWidget);
   });
 
   testWidgets('shows Powered by Paystrater, which opens paystrater.com',

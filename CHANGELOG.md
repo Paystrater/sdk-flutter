@@ -1,3 +1,11 @@
+## 0.1.0-dev.8
+
+- AI agent payments: a third method tile, "Pay with an AI agent". Continue starts the payment (POST /v1/checkout/agentic) and shows the prompt to copy for the customer's agent. New: `Checkout.startAgentic` and `CheckoutApi.startAgentic`
+- "Send to my app" no longer opens the Paystrater app by itself: the request is sent, the checkout shows the approve step, and the app opens only when the customer taps "Open the Paystrater app"
+- The amount due is bold (700, was 600), and so is the total under the deposit address on Transfer to Pay
+- Copy speaks of the business being paid, not "the shop"; "Not your account?" now says to go back and start again with the right Paystrater ID
+- New package description and topics (stablecoin and crypto payments, AI agents), and a rewritten README
+
 ## 0.1.0-dev.7
 
 - The checkout looks like the web SDK and the sandbox app: method tiles with icons, pill buttons, the amount in the brand colour, "← <method>" under each step and "Powered by Paystrater" under every screen
