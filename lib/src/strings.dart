@@ -8,27 +8,27 @@ const Map<String, String> paystraterStringsEn = {
   'testModeHint': 'Test mode: no real money moves.',
   'payTo': 'Pay {merchant}',
   'amountDue': 'Amount due',
-  'chooseMethod': 'How would you like to pay?',
+  'chooseMethod': 'Choose how to pay',
   'methodPayWithPaystrater': 'Pay with Paystrater',
-  'methodPayWithPaystraterHint': 'Approve in your Paystrater app',
+  'methodPayWithPaystraterHint': 'Approve it in your Paystrater app',
   'methodTransferToPay': 'Transfer to Pay',
   'methodTransferToPayHint': 'Send from any wallet on {chains}',
   'methodAgentic': 'Pay with an AI agent',
-  'methodAgenticHint': 'Give your agent a prompt to pay',
-  'back': 'Back',
+  'methodAgenticHint': 'Your agent pays within the limits you set',
+  'back': 'Back to payment methods',
   'continue': 'Continue',
   'payerLabel': 'Paystrater ID or username',
   'payerHelp':
-      'We send the request to your Paystrater app. You approve it there.',
+      'We\'ll send the request to your app. Approve it there with your PIN.',
   'payerRequired': 'Enter your Paystrater ID or username.',
   'sendRequest': 'Send to my app',
   'sentTo': 'Sent to {name}',
-  'approveInApp': 'Approve the payment in your Paystrater app',
+  'approveInApp': 'Approve it in your Paystrater app',
   'approveInAppHint':
-      'Open the request in the app, check the amount and approve it with your PIN. This page updates when you do.',
+      'Open the request, check the amount and approve it with your PIN. This page updates by itself.',
   'openApp': 'Open the Paystrater app',
   'wrongAccount':
-      'Not you? Check the ID and try again with a new payment from the shop.',
+      'Not your account? Start a new payment from the shop and check the ID.',
   'chooseChain': 'Network',
   'emailLabel': 'Email',
   'emailHelp':
@@ -43,14 +43,10 @@ const Map<String, String> paystraterStringsEn = {
       'This address has a typo: its capital letters don\'t match. Copy it again from your wallet.',
   'emailFormat': 'Enter a valid email address, or leave it empty.',
   'optional': 'optional',
-  'getAddress': 'Show the deposit address',
+  'getAddress': 'Get the deposit address',
   'sendExactly': 'Send exactly {amount} {token} on {chain}',
   'depositAddress': 'Deposit address',
   'copy': 'Copy',
-  // The text field's edit menu. Flutter only: on the web the browser draws it
-  'cut': 'Cut',
-  'paste': 'Paste',
-  'selectAll': 'Select all',
   'copyAddress': 'Copy address',
   'copied': 'Copied',
   'copyAmount': 'Copy amount',
@@ -63,9 +59,9 @@ const Map<String, String> paystraterStringsEn = {
   'expiresIn': 'Expires in {time}',
   'expired': 'Expired',
   'received': 'Received so far: {amount} {token}',
-  'waitingForDeposit': 'Waiting for your transfer…',
+  'waitingForDeposit': 'Watching for your transfer…',
   'depositNotice':
-      'Send only {token} on {chain}. Other tokens or networks can\'t be recovered.',
+      'Send only {token} on {chain}. Anything else sent here can\'t be recovered.',
   'paymentDetails': 'Payment details',
   'tokenContract': 'Token contract',
   'network': 'Network',
@@ -74,18 +70,23 @@ const Map<String, String> paystraterStringsEn = {
   'agentHint':
       'Give this prompt to your agent. It pays within your limits, and this page updates when it does.',
   'copyPrompt': 'Copy prompt',
-  'statusProcessing': 'Payment received, confirming',
-  'statusProcessingHint': 'This usually takes under a minute.',
-  'statusSucceeded': 'Paid',
-  'statusSucceededHint': '{merchant} has your payment.',
+  'statusProcessing': 'Payment received',
+  'statusProcessingHint':
+      'Confirming it on the network. This usually takes under a minute.',
+  'statusSucceeded': 'Payment complete',
+  'statusSucceededHint':
+      '{merchant} has your payment. You can close this page.',
   'excessRefunded':
       'You sent more than needed; the extra {amount} {token} was returned to your address.',
-  'statusExpired': 'This payment expired',
-  'statusExpiredHint': 'Nothing arrived in time. Start again from {merchant}.',
+  'statusExpired': 'This payment has expired',
+  'statusExpiredHint':
+      'Nothing arrived in time, so nothing was taken. Start again from {merchant}.',
   'statusUnderpaid': 'You sent less than the amount',
-  'statusUnderpaidHint': 'We\'ve emailed you a link to get your funds back.',
+  'statusUnderpaidHint':
+      'Your funds are safe. We\'ve emailed you a link to get them back.',
   'statusLate': 'Your transfer arrived after the payment expired',
-  'statusLateHint': 'We\'ve emailed you a link to get your funds back.',
+  'statusLateHint':
+      'Your funds are safe. We\'ve emailed you a link to get them back.',
   'statusCancelled': 'This payment was cancelled',
   'statusCancelledHint': '{merchant} cancelled it. Nothing more to pay here.',
   'statusFailed': 'This payment didn\'t go through',
@@ -93,10 +94,15 @@ const Map<String, String> paystraterStringsEn = {
   'statusUnknown': 'Updating',
   'closePage': 'You can close this page.',
   'startAgain': 'Start again',
-  'errorTitle': 'Something went wrong',
+  'errorTitle': 'We couldn\'t load this payment',
   'tryAgain': 'Try again',
+  'poweredBy': 'Powered by',
   'leaveWarning':
       'A transfer may be on its way. If you leave, you won\'t see it confirmed here.',
+  // Text field menu (Flutter only: the web and React Native use the system menu)
+  'cut': 'Cut',
+  'paste': 'Paste',
+  'selectAll': 'Select all',
 };
 
 /// Fills {name} placeholders. Values are plain text.

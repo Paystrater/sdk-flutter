@@ -12,6 +12,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
+import 'brand.dart';
 import 'checkout.dart';
 import 'client.dart';
 import 'core.dart';
@@ -157,11 +158,13 @@ class _PaystraterCheckoutState extends State<PaystraterCheckout> {
   Widget build(BuildContext context) {
     final brightness =
         MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light;
-    final base = PaystraterTheme.of(widget.themeMode, brightness);
     final dark = widget.themeMode == PaystraterThemeMode.dark ||
         (widget.themeMode == PaystraterThemeMode.auto &&
             brightness == Brightness.dark);
-    final theme = (dark ? widget.darkTheme : widget.theme) ?? base;
+    // Your theme or darkTheme over the default, with the brand's dark buttons in dark mode
+    final theme = PaystraterTheme.resolve(
+        dark ? widget.darkTheme : widget.theme,
+        dark: dark);
     final t = PaystraterStrings(widget.strings);
     // Accessibility is not themeable away: colours under WCAG AA are named once per theme on a test key
     if (kDebugMode &&
@@ -240,13 +243,14 @@ class _Frame extends StatelessWidget {
       container: true,
       label: p == null
           ? t['loading']
-          : t.fill('payTo', {'merchant': p.merchantName ?? ''}),
+          : t.fill(
+              'payTo', {'merchant': capitalizeWords(p.merchantName ?? '')}),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: theme.colorBackground,
           border: Border.all(color: theme.colorBorder),
-          borderRadius: BorderRadius.circular(theme.borderRadiusSurface),
+          borderRadius: BorderRadius.circular(theme.borderRadiusCard),
         ),
         child: Stack(
           children: [
@@ -256,30 +260,36 @@ class _Frame extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (p != null) _Header(payment: p, t: t, s: s),
+                  if (p != null)
+                    _Header(
+                        payment: p,
+                        t: t,
+                        s: s,
+                        testMode: c.mode == KeyMode.test),
                   _Body(
                       c: c, t: t, s: s, open: open, onStartAgain: onStartAgain),
+                  _PoweredBy(t: t, s: s, open: open),
                 ],
               ),
             ),
             if (c.mode == KeyMode.test)
               Positioned(
-                top: 0,
-                right: 0,
+                top: 12,
+                right: 12,
                 child: Semantics(
                   label: t['testModeHint'],
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: theme.colorSurface,
-                      borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(theme.borderRadius)),
+                      color: theme.colorSurfaceHover,
+                      borderRadius: BorderRadius.circular(11),
                     ),
                     child: Text(t['testMode'],
                         style: s.small.copyWith(
+                            fontSize: 11,
                             color: theme.colorWarning,
-                            fontWeight: FontWeight.w600)),
+                            fontWeight: FontWeight.w500)),
                   ),
                 ),
               ),
@@ -312,7 +322,7 @@ class _Styles {
             color: theme.colorTextMuted,
             fontFamily: theme.fontFamily),
         title = TextStyle(
-            fontSize: 17,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
             color: theme.colorText,
             fontFamily: theme.fontFamily),
@@ -336,13 +346,20 @@ class _Styles {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.payment, required this.t, required this.s});
+  const _Header(
+      {required this.payment,
+      required this.t,
+      required this.s,
+      required this.testMode});
 
   final CheckoutPayment payment;
   final PaystraterStrings t;
   final _Styles s;
+  final bool testMode;
 
-  String get _initials => (payment.merchantName ?? '')
+  String get _name => capitalizeWords(payment.merchantName ?? '');
+
+  String get _initials => _name
       .split(RegExp(r'\s+'))
       .where((w) => w.isNotEmpty)
       .take(2)
@@ -353,60 +370,82 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = s.theme;
     final logo = payment.merchantLogoUrl;
+    final description = payment.description;
     final fallback = Center(
-        child: Text(_initials.isEmpty ? '₱' : _initials, style: s.strong));
+        child: Text(_initials.isEmpty ? '₱' : _initials,
+            style: s.strong
+                .copyWith(fontSize: 14, color: theme.colorPrimaryText)));
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: theme.colorSurface,
-                  border: Border.all(color: theme.colorBorder),
-                  borderRadius: BorderRadius.circular(theme.borderRadius),
+          Padding(
+            // Clear of the Test mode chip
+            padding: EdgeInsets.only(right: testMode ? 72 : 0),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: logo == null
+                        ? theme.colorPrimarySoft
+                        : theme.colorSurface,
+                    border: logo == null
+                        ? null
+                        : Border.all(color: theme.colorBorder),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: ExcludeSemantics(
+                    child: logo == null
+                        ? fallback
+                        : Image.network(logo,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => fallback),
+                  ),
                 ),
-                child: ExcludeSemantics(
-                  child: logo == null
-                      ? fallback
-                      : Image.network(logo,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => fallback),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_name,
+                          style: s.strong.copyWith(fontSize: 16, height: 1.5)),
+                      if (description != null && description.isNotEmpty)
+                        Text(
+                            description[0].toUpperCase() +
+                                description.substring(1),
+                            style: s.muted),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(payment.merchantName ?? '', style: s.strong),
-                    if (payment.description != null)
-                      Text(payment.description!, style: s.muted),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Text(t['amountDue'], style: s.muted),
+          // 24 between the business and the amount, as on the web
+          const SizedBox(height: 24),
+          Text(t['amountDue'],
+              style: s.small.copyWith(fontWeight: FontWeight.w500)),
+          const SizedBox(height: 4),
           Semantics(
             label: '${payment.amount} ${payment.tokenTicker}',
             excludeSemantics: true,
             child: Text.rich(
               TextSpan(children: [
+                // The figure in the brand colour; the ticker muted and smaller
                 TextSpan(
                     text: formatAmount(payment.amount),
-                    style: s.mono
-                        .copyWith(fontSize: 28, fontWeight: FontWeight.w600)),
+                    style: s.mono.copyWith(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorPrimaryText)),
                 TextSpan(
                   text:
                       '  ${payment.tokenTicker}${payment.chainName != null ? ' · ${payment.chainName}' : ''}',
-                  style: s.muted.copyWith(fontSize: 15),
+                  style: s.muted
+                      .copyWith(fontSize: 14, fontWeight: FontWeight.w500),
                 ),
               ]),
             ),
@@ -434,38 +473,42 @@ class _Button extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = s.theme;
-    final primary = kind == _Kind.primary;
-    final link = kind == _Kind.link;
+    final (Color? fill, Color? line, Color text, double height) =
+        switch (kind) {
+      _Kind.primary => (theme.colorPrimary, null, theme.colorOnPrimary, 48.0),
+      _Kind.secondary => (null, theme.colorBorderStrong, theme.colorText, 40.0),
+      _Kind.tonal => (
+          theme.colorPrimarySoft,
+          null,
+          theme.colorPrimaryText,
+          36.0
+        ),
+    };
     return Semantics(
       button: true,
       enabled: !disabled,
       child: Opacity(
-        opacity: disabled ? 0.6 : 1,
+        opacity: disabled ? 0.5 : 1,
         child: _Tap(
           onTap: disabled ? null : onPressed,
           s: s,
-          radius: theme.borderRadius,
+          radius: theme.borderRadiusButton,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 44),
-            alignment: link ? Alignment.centerLeft : Alignment.center,
-            padding: EdgeInsets.symmetric(horizontal: link ? 0 : 16),
-            decoration: link
-                ? null
-                : BoxDecoration(
-                    color: primary ? theme.colorPrimary : theme.colorBackground,
-                    border:
-                        primary ? null : Border.all(color: theme.colorBorder),
-                    borderRadius: BorderRadius.circular(theme.borderRadius),
-                  ),
+            constraints: BoxConstraints(minHeight: height),
+            alignment: Alignment.center,
+            padding: EdgeInsets.symmetric(
+                horizontal: kind == _Kind.primary ? 24 : 16),
+            decoration: BoxDecoration(
+              color: fill,
+              border: line == null ? null : Border.all(color: line),
+              borderRadius: BorderRadius.circular(theme.borderRadiusButton),
+            ),
             child: Text(
               label,
-              style: link
-                  ? s.strong.copyWith(
-                      color: theme.colorPrimaryText,
-                      decoration: TextDecoration.underline,
-                      fontWeight: FontWeight.w500)
-                  : s.strong.copyWith(
-                      color: primary ? theme.colorOnPrimary : theme.colorText),
+              style: s.strong.copyWith(
+                  fontSize: kind == _Kind.tonal ? 13 : 14,
+                  fontWeight: FontWeight.w500,
+                  color: text),
             ),
           ),
         ),
@@ -474,7 +517,211 @@ class _Button extends StatelessWidget {
   }
 }
 
-enum _Kind { primary, secondary, link }
+enum _Kind { primary, secondary, tonal }
+
+/// "← Pay with Paystrater" under a step: the method in use, and the way back
+/// to the others. A 32-high pill with a 40-high tap area.
+class _BackRow extends StatefulWidget {
+  const _BackRow(
+      {required this.method,
+      required this.s,
+      required this.t,
+      required this.onBack});
+
+  final String method;
+  final _Styles s;
+  final PaystraterStrings t;
+
+  /// Null when switching is no longer possible: the method name alone
+  final VoidCallback? onBack;
+
+  @override
+  State<_BackRow> createState() => _BackRowState();
+}
+
+class _BackRowState extends State<_BackRow> {
+  bool _active = false;
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+    final theme = s.theme;
+    final onBack = widget.onBack;
+    final text = s.muted.copyWith(
+        fontSize: 13,
+        height: 18 / 13,
+        fontWeight: FontWeight.w500,
+        color: _active ? theme.colorText : theme.colorTextMuted);
+    if (onBack == null) {
+      return Align(
+          alignment: Alignment.centerLeft,
+          child: Text(widget.method, style: text));
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        label: '${widget.t['back']}, ${widget.method}',
+        excludeSemantics: true,
+        child: FocusableActionDetector(
+          mouseCursor: SystemMouseCursors.click,
+          onShowHoverHighlight: (v) => setState(() => _active = v),
+          onShowFocusHighlight: (v) => setState(() => _focused = v),
+          actions: <Type, Action<Intent>>{
+            ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (_) {
+              onBack();
+              return null;
+            }),
+          },
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onBack,
+            onTapDown: (_) => setState(() => _active = true),
+            onTapUp: (_) => setState(() => _active = false),
+            onTapCancel: () => setState(() => _active = false),
+            child: Padding(
+              // The invisible part of the 40-high tap area
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Transform.translate(
+                offset: const Offset(-10, 0),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: _active ? theme.colorSurfaceHover : null,
+                    border: _focused
+                        ? Border.all(color: theme.colorPrimaryText, width: 2)
+                        : null,
+                    borderRadius:
+                        BorderRadius.circular(theme.borderRadiusButton),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    CheckoutIconView(CheckoutIcon.arrowLeft,
+                        color: text.color!, size: 14, stroke: 1.75),
+                    const SizedBox(width: 6),
+                    Text(widget.method, style: text),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Powered by Paystrater" under every screen; it opens paystrater.com
+class _PoweredBy extends StatelessWidget {
+  const _PoweredBy({required this.t, required this.s, required this.open});
+
+  final PaystraterStrings t;
+  final _Styles s;
+  final Future<bool> Function(String url) open;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = s.theme;
+    return Container(
+      margin: const EdgeInsets.only(top: 24),
+      padding: const EdgeInsets.only(top: 16),
+      decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: theme.colorBorder))),
+      alignment: Alignment.center,
+      child: Semantics(
+        link: true,
+        label: '${t['poweredBy']} Paystrater',
+        excludeSemantics: true,
+        child: _Tap(
+          onTap: () => unawaited(open(paystraterSite)),
+          s: s,
+          radius: 8,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(t['poweredBy'],
+                  style: s.small.copyWith(color: theme.colorTextSubtle)),
+              const SizedBox(width: 7),
+              PaystraterWordmark(color: theme.colorTextMuted),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A payment method: an icon tile, the name and a hint, and a chevron
+class _MethodTile extends StatelessWidget {
+  const _MethodTile(
+      {required this.method,
+      required this.title,
+      required this.hint,
+      required this.s,
+      required this.onTap});
+
+  final String method;
+  final String title;
+  final String hint;
+  final _Styles s;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = s.theme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        button: true,
+        label: '$title. $hint',
+        excludeSemantics: true,
+        child: _Tap(
+          onTap: onTap,
+          s: s,
+          radius: theme.borderRadiusSurface,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 68),
+            padding: const EdgeInsets.fromLTRB(14, 12, 16, 12),
+            decoration: BoxDecoration(
+              color: theme.colorBackground,
+              border: Border.all(color: theme.colorBorder),
+              borderRadius: BorderRadius.circular(theme.borderRadiusSurface),
+            ),
+            child: Row(children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: theme.colorPrimarySoft,
+                    borderRadius: BorderRadius.circular(13)),
+                child: method == 'pay_with_paystrater'
+                    ? PaystraterMark(color: theme.colorPrimaryText)
+                    : CheckoutIconView(CheckoutIcon.wallet,
+                        color: theme.colorPrimaryText),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style:
+                              s.strong.copyWith(fontSize: 14, height: 20 / 14)),
+                      const SizedBox(height: 2),
+                      Text(hint, style: s.small.copyWith(height: 16 / 12)),
+                    ]),
+              ),
+              CheckoutIconView(CheckoutIcon.chevronRight,
+                  color: theme.colorTextMuted, size: 16, stroke: 1.75),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _Field extends StatelessWidget {
   const _Field(
@@ -507,9 +754,9 @@ class _Field extends StatelessWidget {
             TextSpan(
                 text: label,
                 style: s.strong
-                    .copyWith(fontSize: 14, fontWeight: FontWeight.w500)),
+                    .copyWith(fontSize: 13, fontWeight: FontWeight.w500)),
             if (optional != null)
-              TextSpan(text: ' ($optional)', style: s.muted),
+              TextSpan(text: ' ($optional)', style: s.small),
           ])),
           const SizedBox(height: 6),
           _Input(
@@ -522,12 +769,14 @@ class _Field extends StatelessWidget {
           if (help != null)
             Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(help!, style: s.muted)),
+                child: Text(help!, style: s.small)),
           if (error != null)
             Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Semantics(
-                    liveRegion: true, child: Text(error!, style: s.error))),
+                    liveRegion: true,
+                    child:
+                        Text(error!, style: s.error.copyWith(fontSize: 12)))),
         ],
       ),
     );
@@ -548,10 +797,14 @@ class _Body extends StatelessWidget {
   final Future<bool> Function(String url) open;
   final VoidCallback? onStartAgain;
 
-  Widget _title(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Semantics(header: true, child: Text(text, style: s.title)),
-      );
+  // hidden: a method step names its method in the row at the bottom; the
+  // heading stays for screen readers
+  Widget _title(String text, {bool hidden = false}) => hidden
+      ? Semantics(header: true, label: text, child: const SizedBox.shrink())
+      : Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Semantics(header: true, child: Text(text, style: s.title)),
+        );
 
   Widget? get _actionError {
     final e = c.error;
@@ -587,7 +840,7 @@ class _Body extends StatelessWidget {
         return Center(
             child: Semantics(
                 label: t['loading'],
-                child: _Spinner(color: s.theme.colorPrimary)));
+                child: _Spinner(color: s.theme.colorPrimaryText)));
       case Stage.unavailable:
         return _problem;
       case Stage.methods:
@@ -596,44 +849,18 @@ class _Body extends StatelessWidget {
             children: [
               _title(t['chooseMethod']),
               for (final m in methods)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Semantics(
-                    button: true,
-                    child: _Tap(
-                      onTap: () => c.choose(m),
-                      s: s,
-                      radius: s.theme.borderRadiusSurface,
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 56),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: s.theme.colorBorder),
-                          borderRadius: BorderRadius.circular(
-                              s.theme.borderRadiusSurface),
-                        ),
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                  m == 'pay_with_paystrater'
-                                      ? t['methodPayWithPaystrater']
-                                      : t['methodTransferToPay'],
-                                  style: s.strong),
-                              Text(
-                                m == 'pay_with_paystrater'
-                                    ? t['methodPayWithPaystraterHint']
-                                    : t.fill('methodTransferToPayHint', {
-                                        'chains': c.chains
-                                            .map((x) => x.chainName)
-                                            .join(', ')
-                                      }),
-                                style: s.muted,
-                              ),
-                            ]),
-                      ),
-                    ),
-                  ),
+                _MethodTile(
+                  method: m,
+                  s: s,
+                  onTap: () => c.choose(m),
+                  title: m == 'pay_with_paystrater'
+                      ? t['methodPayWithPaystrater']
+                      : t['methodTransferToPay'],
+                  hint: m == 'pay_with_paystrater'
+                      ? t['methodPayWithPaystraterHint']
+                      : t.fill('methodTransferToPayHint', {
+                          'chains': c.chains.map((x) => x.chainName).join(', ')
+                        }),
                 ),
               if (_actionError != null) _actionError!,
             ]);
@@ -678,7 +905,7 @@ class _Body extends StatelessWidget {
                 _Button(
                     label: t['copyPrompt'],
                     s: s,
-                    kind: _Kind.secondary,
+                    kind: _Kind.tonal,
                     onPressed: () =>
                         Clipboard.setData(ClipboardData(text: prompt))),
               ],
@@ -686,7 +913,7 @@ class _Body extends StatelessWidget {
       case Stage.processing:
       case Stage.updating:
         return Column(children: [
-          _Spinner(color: s.theme.colorPrimary),
+          _Spinner(color: s.theme.colorPrimaryText),
           const SizedBox(height: 12),
           _title(c.stage == Stage.processing
               ? t['statusProcessing']
@@ -713,12 +940,12 @@ class _Alert extends StatelessWidget {
         child: Semantics(
           liveRegion: true,
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              border: Border.all(color: s.theme.colorDanger),
-              borderRadius: BorderRadius.circular(s.theme.borderRadius),
+              color: s.theme.colorDangerSoft,
+              borderRadius: BorderRadius.circular(13),
             ),
-            child: Text(text, style: s.error.copyWith(fontSize: 14)),
+            child: Text(text, style: s.error.copyWith(fontSize: 13)),
           ),
         ),
       );
@@ -732,7 +959,7 @@ class _Well extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: s.theme.colorSurface,
           border: Border.all(color: s.theme.colorBorder),
@@ -751,10 +978,10 @@ class _Note extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
             color: s.theme.colorPrimarySoft,
-            borderRadius: BorderRadius.circular(s.theme.borderRadius)),
+            borderRadius: BorderRadius.circular(13)),
         child:
             Text(text, style: s.muted.copyWith(color: s.theme.colorTextBody)),
       );
@@ -832,7 +1059,7 @@ class _PayWithPaystrater extends StatefulWidget {
   final PaystraterStrings t;
   final _Styles s;
   final Future<bool> Function(String url) open;
-  final Widget Function(String) title;
+  final Widget Function(String, {bool hidden}) title;
   final Widget? actionError;
   final bool canGoBack;
 
@@ -862,7 +1089,9 @@ class _PayWithPaystraterState extends State<_PayWithPaystrater> {
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         widget.title(t['approveInApp']),
         if (sent.name != null)
-          _Note(text: t.fill('sentTo', {'name': sent.name}), s: s),
+          _Note(
+              text: t.fill('sentTo', {'name': capitalizeWords(sent.name!)}),
+              s: s),
         Text(t['approveInAppHint'], style: s.muted),
         const SizedBox(height: 12),
         _Button(
@@ -885,7 +1114,7 @@ class _PayWithPaystraterState extends State<_PayWithPaystrater> {
       ]);
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      widget.title(t['methodPayWithPaystrater']),
+      widget.title(t['methodPayWithPaystrater'], hidden: true),
       _Field(
         label: t['payerLabel'],
         controller: _payer,
@@ -907,8 +1136,12 @@ class _PayWithPaystraterState extends State<_PayWithPaystrater> {
           if (res.ok) unawaited(widget.open(link));
         },
       ),
-      if (widget.canGoBack)
-        _Button(label: t['back'], s: s, kind: _Kind.link, onPressed: c.back),
+      const SizedBox(height: 12),
+      _BackRow(
+          method: t['methodPayWithPaystrater'],
+          s: s,
+          t: t,
+          onBack: widget.canGoBack ? c.back : null),
     ]);
   }
 }
@@ -925,7 +1158,7 @@ class _TransferForm extends StatefulWidget {
   final Checkout c;
   final PaystraterStrings t;
   final _Styles s;
-  final Widget Function(String) title;
+  final Widget Function(String, {bool hidden}) title;
   final Widget? actionError;
   final bool canGoBack;
 
@@ -957,9 +1190,11 @@ class _TransferFormState extends State<_TransferForm> {
     final chosen =
         _chainId ?? (chains.length == 1 ? chains.first.chainId : null);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      widget.title(t['methodTransferToPay']),
+      widget.title(t['methodTransferToPay'], hidden: true),
       if (chains.length > 1) ...[
-        Text(t['chooseChain'], style: s.muted),
+        Text(t['chooseChain'],
+            style:
+                s.strong.copyWith(fontSize: 13, fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final ch in chains)
@@ -970,21 +1205,29 @@ class _TransferFormState extends State<_TransferForm> {
               child: _Tap(
                 onTap: () => setState(() => _chainId = ch.chainId),
                 s: s,
-                radius: s.theme.borderRadius,
+                radius: s.theme.borderRadiusButton,
                 child: Container(
-                  constraints: const BoxConstraints(minHeight: 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  constraints: const BoxConstraints(minHeight: 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color:
-                        chosen == ch.chainId ? s.theme.colorPrimarySoft : null,
+                    color: chosen == ch.chainId
+                        ? s.theme.colorPrimarySoft
+                        : s.theme.colorBackground,
                     border: Border.all(
                         color: chosen == ch.chainId
-                            ? s.theme.colorPrimary
+                            ? s.theme.colorPrimaryText
                             : s.theme.colorBorder),
-                    borderRadius: BorderRadius.circular(s.theme.borderRadius),
+                    borderRadius:
+                        BorderRadius.circular(s.theme.borderRadiusButton),
                   ),
-                  child: Text(ch.chainName, style: s.strong),
+                  child: Text(ch.chainName,
+                      style: s.strong.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: chosen == ch.chainId
+                              ? s.theme.colorPrimaryText
+                              : s.theme.colorText)),
                 ),
               ),
             ),
@@ -1041,8 +1284,12 @@ class _TransferFormState extends State<_TransferForm> {
           if (mounted) setState(() => _problem = res.field);
         },
       ),
-      if (widget.canGoBack)
-        _Button(label: t['back'], s: s, kind: _Kind.link, onPressed: c.back),
+      const SizedBox(height: 12),
+      _BackRow(
+          method: t['methodTransferToPay'],
+          s: s,
+          t: t,
+          onBack: widget.canGoBack ? c.back : null),
     ]);
   }
 }
@@ -1063,7 +1310,7 @@ class _DepositView extends StatefulWidget {
   final _Styles s;
   final Deposit deposit;
   final Future<bool> Function(String url) open;
-  final Widget Function(String) title;
+  final Widget Function(String, {bool hidden}) title;
   final Widget? actionError;
 
   @override
@@ -1155,7 +1402,7 @@ class _DepositViewState extends State<_DepositView> {
           child: _Button(
             label: _copied ? t['copied'] : t['copyAddress'],
             s: s,
-            kind: _Kind.secondary,
+            kind: _Kind.tonal,
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: d.depositAddress));
               if (!mounted) return;
@@ -1171,7 +1418,7 @@ class _DepositViewState extends State<_DepositView> {
           child: _Button(
               label: t['shareAddress'],
               s: s,
-              kind: _Kind.secondary,
+              kind: _Kind.tonal,
               onPressed: () =>
                   unawaited(PaystraterPlatform.share(d.depositAddress))),
         ),
@@ -1202,7 +1449,7 @@ class _DepositViewState extends State<_DepositView> {
         SizedBox(
             width: 16,
             height: 16,
-            child: _Spinner(stroke: 2, color: s.theme.colorPrimary)),
+            child: _Spinner(stroke: 2, color: s.theme.colorPrimaryText)),
         const SizedBox(width: 8),
         Expanded(
             child: Semantics(
@@ -1267,14 +1514,16 @@ class _Result extends StatelessWidget {
   final Checkout c;
   final PaystraterStrings t;
   final _Styles s;
-  final Widget Function(String) title;
+  final Widget Function(String, {bool hidden}) title;
   final VoidCallback? onStartAgain;
 
   @override
   Widget build(BuildContext context) {
     final p = c.payment!;
     final theme = s.theme;
-    final merchant = p.merchantName ?? 'the shop';
+    final merchant = (p.merchantName ?? '').isEmpty
+        ? 'the shop'
+        : capitalizeWords(p.merchantName!);
     var heading = t['statusFailed'];
     String? hint = p.failureReason;
     var mark = '!';
@@ -1311,12 +1560,16 @@ class _Result extends StatelessWidget {
     return Column(children: [
       ExcludeSemantics(
         child: Container(
-          width: 44,
-          height: 44,
+          width: 52,
+          height: 52,
           alignment: Alignment.center,
           decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: tone, width: 2)),
+              color: tone == theme.colorSuccess
+                  ? theme.colorSuccessSoft
+                  : tone == theme.colorDanger
+                      ? theme.colorDangerSoft
+                      : theme.colorSurfaceHover),
           child: Text(mark,
               style: TextStyle(
                   color: tone, fontSize: 22, fontWeight: FontWeight.w700)),
@@ -1606,21 +1859,27 @@ class _InputState extends State<_Input>
       child: _gestures.buildGestureDetector(
         behavior: HitTestBehavior.translucent,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          constraints: const BoxConstraints(minHeight: 48),
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           decoration: BoxDecoration(
+            color: theme.colorBackground,
             border: Border.all(color: border),
             borderRadius: BorderRadius.circular(theme.borderRadius),
           ),
           child: Stack(children: [
             if (widget.hint != null && widget.controller.text.isEmpty)
-              ExcludeSemantics(child: Text(widget.hint!, style: s.muted)),
+              ExcludeSemantics(
+                  child: Text(widget.hint!,
+                      style: s.body.copyWith(
+                          fontSize: 14, color: theme.colorTextSubtle))),
             EditableText(
               key: _editable,
               controller: widget.controller,
               focusNode: _focus,
               keyboardType: widget.keyboardType,
               autocorrect: false,
-              style: s.body.copyWith(color: theme.colorText),
+              style: s.body.copyWith(fontSize: 14, color: theme.colorText),
               cursorColor: theme.colorPrimaryText,
               backgroundCursorColor: theme.colorTextMuted,
               selectionColor: theme.colorPrimary.withAlpha(77),
