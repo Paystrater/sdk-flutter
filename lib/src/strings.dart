@@ -28,7 +28,7 @@ const Map<String, String> paystraterStringsEn = {
       'Open the request, check the amount and approve it with your PIN. This page updates by itself.',
   'openApp': 'Open the Paystrater app',
   'wrongAccount':
-      'Not your account? Start a new payment from the shop and check the ID.',
+      'Not your account? Go back and start the payment again with the right Paystrater ID.',
   'chooseChain': 'Network',
   'emailLabel': 'Email',
   'emailHelp':

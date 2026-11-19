@@ -35,7 +35,7 @@ const _blockedMessage =
     'Too many requests from your network. Wait a moment, then try again.';
 
 const genericSetupMessage =
-    'This checkout is not set up correctly. Ask the shop for a new link.';
+    'This checkout is not set up correctly. Ask the business you\'re paying for a new link.';
 
 /// What a payer sees: set-up problems in plain words on a test key, a generic line on a live key.
 String errorForPayer(PaystraterError error, KeyMode? mode) {
@@ -98,6 +98,10 @@ abstract class CheckoutApi {
   Future<CallResult<CheckoutPayment>> payWithPaystrater(
       Map<String, Object?> body,
       {CancelToken? cancel});
+
+  /// Starts an AI agent payment; the payment then carries the agent's prompt.
+  Future<CallResult<CheckoutPayment>> startAgentic(Map<String, Object?> body,
+      {CancelToken? cancel});
 }
 
 class PaystraterClient implements CheckoutApi {
@@ -151,6 +155,12 @@ class PaystraterClient implements CheckoutApi {
           Map<String, Object?> body,
           {CancelToken? cancel}) =>
       _call('POST', '/v1/checkout/pay-with-paystrater', body,
+          (j) => CheckoutPayment.fromJson(j), cancel);
+
+  @override
+  Future<CallResult<CheckoutPayment>> startAgentic(Map<String, Object?> body,
+          {CancelToken? cancel}) =>
+      _call('POST', '/v1/checkout/agentic', body,
           (j) => CheckoutPayment.fromJson(j), cancel);
 
   /// Closes the HTTP client; the checkout calls this when it is disposed.

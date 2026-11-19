@@ -23,8 +23,8 @@ import 'theme.dart';
 
 const _appLink = 'https://app.paystrater.com/pay?id=';
 
-/// Mobile offers Pay with Paystrater and Transfer to Pay; an agent payment is the merchant's to hand to the agent.
-const _mobileMethods = ['pay_with_paystrater', 'transfer_to_pay'];
+/// The methods the checkout offers, in the payment's order, as on the web.
+const _mobileMethods = ['pay_with_paystrater', 'transfer_to_pay', 'agentic'];
 
 class PaystraterCheckout extends StatefulWidget {
   const PaystraterCheckout({
@@ -439,7 +439,7 @@ class _Header extends StatelessWidget {
                     text: formatAmount(payment.amount),
                     style: s.mono.copyWith(
                         fontSize: 26,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: theme.colorPrimaryText)),
                 TextSpan(
                   text:
@@ -698,7 +698,10 @@ class _MethodTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(13)),
                 child: method == 'pay_with_paystrater'
                     ? PaystraterMark(color: theme.colorPrimaryText)
-                    : CheckoutIconView(CheckoutIcon.wallet,
+                    : CheckoutIconView(
+                        method == 'transfer_to_pay'
+                            ? CheckoutIcon.wallet
+                            : CheckoutIcon.sparkle,
                         color: theme.colorPrimaryText),
               ),
               const SizedBox(width: 14),
@@ -855,12 +858,17 @@ class _Body extends StatelessWidget {
                   onTap: () => c.choose(m),
                   title: m == 'pay_with_paystrater'
                       ? t['methodPayWithPaystrater']
-                      : t['methodTransferToPay'],
+                      : m == 'transfer_to_pay'
+                          ? t['methodTransferToPay']
+                          : t['methodAgentic'],
                   hint: m == 'pay_with_paystrater'
                       ? t['methodPayWithPaystraterHint']
-                      : t.fill('methodTransferToPayHint', {
-                          'chains': c.chains.map((x) => x.chainName).join(', ')
-                        }),
+                      : m == 'transfer_to_pay'
+                          ? t.fill('methodTransferToPayHint', {
+                              'chains':
+                                  c.chains.map((x) => x.chainName).join(', ')
+                            })
+                          : t['methodAgenticHint'],
                 ),
               if (_actionError != null) _actionError!,
             ]);
@@ -892,23 +900,52 @@ class _Body extends StatelessWidget {
                 title: _title,
                 actionError: _actionError);
       case Stage.agentic:
+        // An AI agent payment: Continue gets the prompt the customer copies for their agent
         final prompt = c.payment?.agentPrompt;
-        return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _title(t['agentTitle']),
-              Text(t['agentHint'], style: s.muted),
-              if (prompt != null) ...[
+        if (prompt != null) {
+          return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _title(t['agentTitle']),
+                Text(t['agentHint'], style: s.muted),
                 const SizedBox(height: 12),
                 _Well(s: s, child: Text(prompt, style: s.mono)),
                 const SizedBox(height: 12),
-                _Button(
-                    label: t['copyPrompt'],
-                    s: s,
-                    kind: _Kind.tonal,
-                    onPressed: () =>
-                        Clipboard.setData(ClipboardData(text: prompt))),
-              ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _Button(
+                      label: t['copyPrompt'],
+                      s: s,
+                      kind: _Kind.tonal,
+                      onPressed: () =>
+                          Clipboard.setData(ClipboardData(text: prompt))),
+                ),
+                if (_actionError != null) ...[
+                  const SizedBox(height: 12),
+                  _actionError!,
+                ],
+              ]);
+        }
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _title(t['agentTitle'], hidden: true),
+              Text(t['agentHint'], style: s.muted),
+              const SizedBox(height: 12),
+              if (_actionError != null) _actionError!,
+              _Button(
+                  label: t['continue'],
+                  s: s,
+                  disabled: c.busy,
+                  onPressed: () => unawaited(c.startAgentic())),
+              const SizedBox(height: 12),
+              _BackRow(
+                  method: t['methodAgentic'],
+                  s: s,
+                  t: t,
+                  onBack: methods.length > 1 && c.payment?.method == null
+                      ? c.back
+                      : null),
             ]);
       case Stage.processing:
       case Stage.updating:
@@ -1131,9 +1168,8 @@ class _PayWithPaystraterState extends State<_PayWithPaystrater> {
         onPressed: () async {
           final res = await c.payWithPaystrater(_payer.text);
           if (!mounted) return;
+          // The request is sent; the Paystrater app opens only when the customer taps "Open the Paystrater app"
           setState(() => _problem = res.field);
-          // Hand off to the Paystrater app; without it the link opens the web page with store links
-          if (res.ok) unawaited(widget.open(link));
         },
       ),
       const SizedBox(height: 12),
@@ -1391,7 +1427,9 @@ class _DepositViewState extends State<_DepositView> {
           Row(children: [
             Expanded(
                 child: Text('${formatAmount(d.amount)} ${d.tokenTicker}',
-                    style: s.muted)),
+                    style: s.strong.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: s.theme.colorText))),
             _CopyLink(label: t['copyAmount'], value: d.amount, t: t, s: s),
           ]),
         ]),
@@ -1522,7 +1560,7 @@ class _Result extends StatelessWidget {
     final p = c.payment!;
     final theme = s.theme;
     final merchant = (p.merchantName ?? '').isEmpty
-        ? 'the shop'
+        ? 'the business'
         : capitalizeWords(p.merchantName!);
     var heading = t['statusFailed'];
     String? hint = p.failureReason;
@@ -1577,7 +1615,10 @@ class _Result extends StatelessWidget {
       ),
       const SizedBox(height: 10),
       title(heading),
-      if (hint != null) Text(hint, style: s.muted, textAlign: TextAlign.center),
+      // A sentence starts with a capital, also when it starts with the fallback ("the business")
+      if (hint != null && hint.isNotEmpty)
+        Text(hint[0].toUpperCase() + hint.substring(1),
+            style: s.muted, textAlign: TextAlign.center),
       if (p.status == 'expired' &&
           !c.underpaid &&
           !c.arrivedLate &&
