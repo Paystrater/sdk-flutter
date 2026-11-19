@@ -5,13 +5,16 @@
 /// Live or test, from the publishable key's prefix.
 enum KeyMode { live, test }
 
-final _publishable = RegExp(r'^pk_(live|test)_[A-Za-z0-9]+$');
-
 /// The mode of a publishable key, or null for anything else. A secret key is never accepted.
+/// Only the prefix is checked: the dashboard's keys are base64url after it,
+/// and the API is the judge of the rest.
 KeyMode? publishableKeyMode(String key) {
-  final match = _publishable.firstMatch(key);
-  if (match == null) return null;
-  return match.group(1) == 'live' ? KeyMode.live : KeyMode.test;
+  if (RegExp(r'\s').hasMatch(key)) return null;
+  for (final mode in KeyMode.values) {
+    final prefix = 'pk_${mode.name}_';
+    if (key.startsWith(prefix) && key.length > prefix.length) return mode;
+  }
+  return null;
 }
 
 const secretKeyMessage =
@@ -21,6 +24,9 @@ const secretKeyMessage =
 String? keyProblem(String key) {
   if (key.trim().isEmpty) {
     return 'Pass your publishable key (pk_live_… or pk_test_…) from the Paystrater dashboard.';
+  }
+  if (RegExp(r'\s').hasMatch(key)) {
+    return 'The publishable key has a space or line break in it; copy it again from the dashboard.';
   }
   if (key.startsWith('sk_')) return secretKeyMessage;
   if (publishableKeyMode(key) == null) {
@@ -52,15 +58,22 @@ BigInt? toBaseUnits(String amount, int decimals) {
   return BigInt.parse(whole + fraction.padRight(decimals, '0'));
 }
 
-/// The exact amount as the server wrote it, with thousands grouped for reading.
+/// Capitalizes the first letter of every word and leaves the rest as it is,
+/// as CSS text-transform: capitalize does on the web: "acme shoes" → "Acme Shoes".
+/// The checkout shows names (the business, the payer) this way.
+String capitalizeWords(String text) => text.replaceAllMapped(
+    RegExp(r'(^|\s)(\S)'), (m) => '${m.group(1)}${m.group(2)!.toUpperCase()}');
+
+/// The exact amount as the server wrote it, with thousands grouped and at least two decimals.
 String formatAmount(String amount) {
   final match = _decimal.firstMatch(amount.trim());
   if (match == null) return amount;
   final whole = match
       .group(1)!
       .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
-  final fraction = match.group(2);
-  return fraction == null ? whole : '$whole.$fraction';
+  // At least two decimals, as money is read ("0.5" → "0.50"); every decimal the server sent is kept
+  final fraction = (match.group(2) ?? '').padRight(2, '0');
+  return '$whole.$fraction';
 }
 
 /// -1, 0 or 1 without floating point; null when either is not a plain decimal.

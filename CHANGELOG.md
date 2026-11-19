@@ -1,3 +1,10 @@
+## 0.1.0-dev.7
+
+- The checkout looks like the web SDK and the sandbox app: method tiles with icons, pill buttons, the amount in the brand colour, "← <method>" under each step and "Powered by Paystrater" under every screen
+- Dark mode keeps the brand dark buttons when the theme uses Paystrater blue; a custom colorPrimary gets a readable hover, button text and brand text (WCAG AA). New: PaystraterTheme.resolve, readableOn, capitalizeWords
+- Names are capitalized; amounts show at least two decimals
+- A publishable key is checked by its pk_live_ or pk_test_ prefix only; a key with a space or line break is refused with a clear message
+
 ## 0.1.0-dev.6
 
 - Default theme follows the updated design guideline

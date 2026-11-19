@@ -25,6 +25,7 @@ export 'src/client.dart'
 export 'src/core.dart'
     show
         KeyMode,
+        capitalizeWords,
         checkEvmAddress,
         formatAmount,
         isPaymentId,
@@ -40,5 +41,10 @@ export 'src/models.dart'
 export 'src/platform.dart' show AppLifecycleActivity, PaystraterPlatform;
 export 'src/strings.dart' show PaystraterStrings, paystraterStringsEn;
 export 'src/theme.dart'
-    show PaystraterTheme, PaystraterThemeMode, contrastWarnings;
+    show
+        PaystraterTheme,
+        PaystraterThemeMode,
+        contrastRatio,
+        contrastWarnings,
+        readableOn;
 export 'src/widget.dart' show PaystraterCheckout;

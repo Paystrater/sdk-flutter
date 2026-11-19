@@ -1,9 +1,10 @@
 // PaystraterTheme: the same variable names as the web's Appearance API. The
 // defaults follow the Paystrater mobile app (mobile/paystrater
 // src/utils/colors.ts), the brand theme source for every Paystrater surface:
-// the checkout card is the app's sub-surface (white, or #24272F in dark), wells
-// are the app surface, #285BB6 in light mode and #A2AED1 with dark text in dark
-// mode. See .agents/rules/DESIGN.md.
+// as the web sandbox app draws it: the checkout card is the sub-surface (white,
+// or #24272F in dark) edged by the card line, wells inside it are sunken,
+// buttons are pills, #285BB6 in light mode and #A2AED1 with dark text in dark
+// mode. The values match @paystrater/react (core/theme.ts).
 import 'package:flutter/widgets.dart';
 
 enum PaystraterThemeMode { light, dark, auto }
@@ -24,36 +25,52 @@ class PaystraterTheme {
     required this.colorSuccess,
     required this.colorWarning,
     required this.colorDanger,
+    this.colorSurfaceHover = const Color(0xFFE4E9EF),
+    this.colorTextSubtle = const Color(0xFF8E939D),
+    this.colorBorderStrong = const Color(0xFFC5C6D0),
+    this.colorSuccessSoft = const Color(0x1F047857),
+    this.colorDangerSoft = const Color(0x1ABA1A1A),
     this.fontFamily,
     this.fontFamilyMono,
-    this.borderRadius = 8,
-    this.borderRadiusSurface = 12,
+    this.borderRadius = 14,
+    this.borderRadiusSurface = 14,
+    this.borderRadiusButton = 24,
+    this.borderRadiusCard = 18,
   });
 
   static const light = PaystraterTheme(
     colorBackground: Color(0xFFFFFFFF),
-    colorSurface: Color(0xFFECF0F3),
+    colorSurface: Color(0xFFF5F7FA),
+    colorSurfaceHover: Color(0xFFE4E9EF),
     colorText: Color(0xFF1B1B1F),
     colorTextBody: Color(0xFF3A3F4A),
     colorTextMuted: Color(0xFF636975),
+    colorTextSubtle: Color(0xFF8E939D),
     colorBorder: Color(0xFFD4DAE6),
+    colorBorderStrong: Color(0xFFC5C6D0),
     colorPrimary: Color(0xFF285BB6),
     colorPrimaryHover: Color(0xFF1D4693),
     colorOnPrimary: Color(0xFFFFFFFF),
     colorPrimaryText: Color(0xFF285BB6),
     colorPrimarySoft: Color(0xFFE2E9F5),
     colorSuccess: Color(0xFF047857),
+    colorSuccessSoft: Color(0x1F047857),
     colorWarning: Color(0xFFB45309),
     colorDanger: Color(0xFFBA1A1A),
+    colorDangerSoft: Color(0x1ABA1A1A),
   );
 
   static const dark = PaystraterTheme(
     colorBackground: Color(0xFF24272F),
-    colorSurface: Color(0xFF2C303A),
+    colorSurface: Color(0xFF1E2128),
+    colorSurfaceHover: Color(0xFF2C303A),
     colorText: Color(0xFFE3E2E6),
     colorTextBody: Color(0xFFD4D7E0),
     colorTextMuted: Color(0xFFA4A9B8),
-    colorBorder: Color(0xFF343844),
+    colorTextSubtle: Color(0xFF707584),
+    // The periwinkle card line at 18%, as in the app
+    colorBorder: Color(0x2EA2AED1),
+    colorBorderStrong: Color(0xFF44464F),
     // Filled buttons are periwinkle with dark text, as in the mobile app
     colorPrimary: Color(0xFFA2AED1),
     colorPrimaryHover: Color(0xFFB8C3E0),
@@ -61,8 +78,10 @@ class PaystraterTheme {
     colorPrimaryText: Color(0xFFA2AED1),
     colorPrimarySoft: Color(0xFF353A48),
     colorSuccess: Color(0xFF4ADEA0),
+    colorSuccessSoft: Color(0x1F4ADEA0),
     colorWarning: Color(0xFFFBBF24),
     colorDanger: Color(0xFFFFB4AB),
+    colorDangerSoft: Color(0x1FFFB4AB),
   );
 
   /// The theme for a mode; auto follows the platform's brightness.
@@ -74,67 +93,170 @@ class PaystraterTheme {
     return light;
   }
 
+  /// The theme the checkout draws with: [custom] (your theme or darkTheme)
+  /// over the default for the mode. Paystrater's own light blue (as setup code
+  /// writes `colorPrimary: Color(0xFF285BB6)`) is the brand, so in dark mode
+  /// the brand's dark buttons apply. A primary colour of your own gets a
+  /// hover, a readable text colour on it, and a brand text colour that reads
+  /// on the card (WCAG AA), unless you set those too.
+  static PaystraterTheme resolve(PaystraterTheme? custom,
+      {required bool dark}) {
+    final base = dark ? PaystraterTheme.dark : PaystraterTheme.light;
+    if (custom == null) return base;
+    var theme = custom;
+    if (dark && theme.colorPrimary == light.colorPrimary) {
+      theme = theme.copyWith(
+          colorPrimary: base.colorPrimary,
+          colorPrimaryHover: base.colorPrimaryHover,
+          colorOnPrimary: base.colorOnPrimary,
+          colorPrimaryText: base.colorPrimaryText);
+    }
+    final defaults = dark ? PaystraterTheme.dark : PaystraterTheme.light;
+    final primary = theme.colorPrimary;
+    if (primary == light.colorPrimary ||
+        primary == PaystraterTheme.dark.colorPrimary) {
+      return theme;
+    }
+    // A merchant colour: fill in what still has the Paystrater default
+    final onLight = contrastRatio(const Color(0xFFFFFFFF), primary);
+    final onDark = contrastRatio(const Color(0xFF131519), primary);
+    return theme.copyWith(
+      colorPrimaryHover:
+          theme.colorPrimaryHover == defaults.colorPrimaryHover ||
+                  theme.colorPrimaryHover == light.colorPrimaryHover
+              ? Color.lerp(
+                  primary,
+                  dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+                  0.15)
+              : null,
+      colorOnPrimary: theme.colorOnPrimary == defaults.colorOnPrimary ||
+              theme.colorOnPrimary == light.colorOnPrimary
+          ? (onLight >= onDark
+              ? const Color(0xFFFFFFFF)
+              : const Color(0xFF131519))
+          : null,
+      colorPrimaryText: theme.colorPrimaryText == defaults.colorPrimaryText ||
+              theme.colorPrimaryText == light.colorPrimaryText
+          ? readableOn(primary, theme.colorBackground, dark: dark)
+          : null,
+    );
+  }
+
   final Color colorBackground;
+
+  /// Wells inside the card: the deposit address
   final Color colorSurface;
+
+  /// Pressed and hover fills: method tiles, chips, the back row
+  final Color colorSurfaceHover;
   final Color colorText;
   final Color colorTextBody;
   final Color colorTextMuted;
+
+  /// Placeholders and small print
+  final Color colorTextSubtle;
+
+  /// The card line
   final Color colorBorder;
+
+  /// Outline buttons
+  final Color colorBorderStrong;
   final Color colorPrimary;
   final Color colorPrimaryHover;
   final Color colorOnPrimary;
+
+  /// Links, focus rings and the amount
   final Color colorPrimaryText;
+
+  /// Tinted fills: notes, tonal buttons, the selected chain, icon tiles
   final Color colorPrimarySoft;
   final Color colorSuccess;
+  final Color colorSuccessSoft;
   final Color colorWarning;
   final Color colorDanger;
+  final Color colorDangerSoft;
 
   /// A font your app ships; the SDK never loads fonts, so null means the system font.
   final String? fontFamily;
   final String? fontFamilyMono;
+
+  /// Inputs
   final double borderRadius;
+
+  /// Method tiles and wells
   final double borderRadiusSurface;
+
+  /// Buttons and chips: pills
+  final double borderRadiusButton;
+
+  /// The checkout card
+  final double borderRadiusCard;
 
   PaystraterTheme copyWith({
     Color? colorBackground,
     Color? colorSurface,
+    Color? colorSurfaceHover,
     Color? colorText,
     Color? colorTextBody,
     Color? colorTextMuted,
+    Color? colorTextSubtle,
     Color? colorBorder,
+    Color? colorBorderStrong,
     Color? colorPrimary,
     Color? colorPrimaryHover,
     Color? colorOnPrimary,
     Color? colorPrimaryText,
     Color? colorPrimarySoft,
     Color? colorSuccess,
+    Color? colorSuccessSoft,
     Color? colorWarning,
     Color? colorDanger,
+    Color? colorDangerSoft,
     String? fontFamily,
     String? fontFamilyMono,
     double? borderRadius,
     double? borderRadiusSurface,
+    double? borderRadiusButton,
+    double? borderRadiusCard,
   }) =>
       PaystraterTheme(
         colorBackground: colorBackground ?? this.colorBackground,
         colorSurface: colorSurface ?? this.colorSurface,
+        colorSurfaceHover: colorSurfaceHover ?? this.colorSurfaceHover,
         colorText: colorText ?? this.colorText,
         colorTextBody: colorTextBody ?? this.colorTextBody,
         colorTextMuted: colorTextMuted ?? this.colorTextMuted,
+        colorTextSubtle: colorTextSubtle ?? this.colorTextSubtle,
         colorBorder: colorBorder ?? this.colorBorder,
+        colorBorderStrong: colorBorderStrong ?? this.colorBorderStrong,
         colorPrimary: colorPrimary ?? this.colorPrimary,
         colorPrimaryHover: colorPrimaryHover ?? this.colorPrimaryHover,
         colorOnPrimary: colorOnPrimary ?? this.colorOnPrimary,
         colorPrimaryText: colorPrimaryText ?? this.colorPrimaryText,
         colorPrimarySoft: colorPrimarySoft ?? this.colorPrimarySoft,
         colorSuccess: colorSuccess ?? this.colorSuccess,
+        colorSuccessSoft: colorSuccessSoft ?? this.colorSuccessSoft,
         colorWarning: colorWarning ?? this.colorWarning,
         colorDanger: colorDanger ?? this.colorDanger,
+        colorDangerSoft: colorDangerSoft ?? this.colorDangerSoft,
         fontFamily: fontFamily ?? this.fontFamily,
         fontFamilyMono: fontFamilyMono ?? this.fontFamilyMono,
         borderRadius: borderRadius ?? this.borderRadius,
         borderRadiusSurface: borderRadiusSurface ?? this.borderRadiusSurface,
+        borderRadiusButton: borderRadiusButton ?? this.borderRadiusButton,
+        borderRadiusCard: borderRadiusCard ?? this.borderRadiusCard,
       );
+}
+
+/// [color] itself when it passes WCAG AA (4.5:1) on [background], else the
+/// first shade of it, darker in light mode or lighter in dark mode, that does.
+Color readableOn(Color color, Color background, {required bool dark}) {
+  final toward = dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
+  for (var step = 0; step <= 20; step++) {
+    final shade = Color.lerp(color, toward, step / 20)!;
+    if (contrastRatio(shade, background) >= 4.5) return shade;
+  }
+  return toward;
 }
 
 /// WCAG contrast ratio of two colours (6.7: accessibility is not themeable away).

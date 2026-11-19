@@ -118,14 +118,14 @@ void main() {
 
   testWidgets('shows the end states', (tester) async {
     final states = <Map<String, Object?>, String>{
-      {'status': 'succeeded'}: 'Paid',
+      {'status': 'succeeded'}: 'Payment complete',
       {
         'status': 'expired',
         'method': 'transfer_to_pay',
         'transferToPay': {...ttpJson, 'receivedAmount': '10'}
       }: 'You sent less than the amount',
       {'status': 'cancelled'}: 'This payment was cancelled',
-      {'status': 'processing'}: 'Payment received, confirming',
+      {'status': 'processing'}: 'Payment received',
     };
     for (final e in states.entries) {
       await tester.pumpWidget(host(PaystraterCheckout(
@@ -136,6 +136,56 @@ void main() {
       await tester.pump();
       expect(find.text(e.value), findsOneWidget, reason: e.value);
     }
+  });
+
+  testWidgets('shows Powered by Paystrater, which opens paystrater.com',
+      (tester) async {
+    final opened = <String>[];
+    await tester.pumpWidget(host(PaystraterCheckout(
+      paymentId: id,
+      publishableKey: 'pk_test_x',
+      api: FakeApi(read: () => okPayment()),
+      openUrl: (url) async {
+        opened.add(url);
+        return true;
+      },
+    )));
+    await tester.pump();
+    expect(find.text('Powered by'), findsOneWidget);
+    await tester.tap(find.text('Powered by'));
+    await tester.pump();
+    expect(opened, ['https://paystrater.com']);
+  });
+
+  testWidgets(
+      'names the method under the step and goes back from there, only before paying',
+      (tester) async {
+    await tester.pumpWidget(host(PaystraterCheckout(
+        paymentId: id,
+        publishableKey: 'pk_test_x',
+        api: FakeApi(read: () => okPayment()))));
+    await tester.pump();
+    await tester.tap(find.text('Pay with Paystrater'));
+    await tester.pump();
+    expect(
+        find.bySemanticsLabel('Back to payment methods, Pay with Paystrater'),
+        findsOneWidget);
+    await tester.tap(find.text('Pay with Paystrater'));
+    await tester.pump();
+    expect(find.text('Choose how to pay'), findsOneWidget);
+  });
+
+  testWidgets('capitalizes the merchant name and shows two decimals',
+      (tester) async {
+    await tester.pumpWidget(host(PaystraterCheckout(
+        paymentId: id,
+        publishableKey: 'pk_test_x',
+        api: FakeApi(
+            read: () =>
+                okPayment({'merchantName': 'acme shoes', 'amount': '0.5'})))));
+    await tester.pump();
+    expect(find.text('Acme Shoes'), findsOneWidget);
+    expect(find.textContaining('0.50'), findsOneWidget);
   });
 
   testWidgets('shows the error and Try again when the first read fails',
@@ -158,6 +208,36 @@ void main() {
         paymentId: id, publishableKey: 'sk_live_oops')));
     await tester.pump();
     expect(find.textContaining('secret key'), findsOneWidget);
+  });
+
+  test('dark mode keeps the brand dark buttons for the setup code light blue',
+      () {
+    final dark = PaystraterTheme.resolve(
+        PaystraterTheme.light.copyWith(colorPrimary: const Color(0xFF285BB6)),
+        dark: true);
+    expect(dark.colorPrimary, const Color(0xFFA2AED1));
+    expect(dark.colorOnPrimary, const Color(0xFF131519));
+    expect(PaystraterTheme.resolve(null, dark: true).colorBackground,
+        const Color(0xFF24272F));
+  });
+
+  test('a merchant colour gets readable companions (WCAG AA)', () {
+    final yellow = PaystraterTheme.resolve(
+        PaystraterTheme.light.copyWith(colorPrimary: const Color(0xFFFFD400)),
+        dark: false);
+    expect(contrastRatio(yellow.colorPrimaryText, yellow.colorBackground),
+        greaterThanOrEqualTo(4.5));
+    expect(yellow.colorOnPrimary, const Color(0xFF131519));
+    expect(
+        readableOn(const Color(0xFFFFD400), const Color(0xFF24272F),
+            dark: true),
+        const Color(0xFFFFD400));
+  });
+
+  test('capitalizes names as CSS capitalize does', () {
+    expect(capitalizeWords('acme shoes'), 'Acme Shoes');
+    expect(capitalizeWords('ACME ltd'), 'ACME Ltd');
+    expect(capitalizeWords(''), '');
   });
 
   test('the default theme is the Paystrater design and passes WCAG AA', () {
