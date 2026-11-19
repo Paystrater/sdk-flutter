@@ -1,3 +1,11 @@
+## 0.1.0-dev.9
+
+- Transfer to Pay: "Send exactly …" is a calm callout in the success colours instead of a large heading
+- The deposit shows a "Total amount" label, and the amount in the brand text colour, which follows a custom colorPrimary and dark mode
+- Choosing no network says "Select a network to pay on." instead of "Network"
+- The AI agent step says "Create a one-time prompt for your agent. It will pay within your limits." before the prompt exists, and "Give this prompt to your agent" once it does
+- New strings: `chooseChainRequired`, `totalAmount`, `agentStartHint`
+
 ## 0.1.0-dev.8
 
 - AI agent payments: a third method tile, "Pay with an AI agent". Continue starts the payment (POST /v1/checkout/agentic) and shows the prompt to copy for the customer's agent. New: `Checkout.startAgentic` and `CheckoutApi.startAgentic`
