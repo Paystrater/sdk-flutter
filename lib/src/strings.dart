@@ -30,6 +30,7 @@ const Map<String, String> paystraterStringsEn = {
   'wrongAccount':
       'Not your account? Go back and start the payment again with the right Paystrater ID.',
   'chooseChain': 'Network',
+  'chooseChainRequired': 'Select a network to pay on.',
   'emailLabel': 'Email',
   'emailHelp':
       'Recommended. We email your receipt, and a link to get funds back if anything goes wrong.',
@@ -46,6 +47,7 @@ const Map<String, String> paystraterStringsEn = {
   'getAddress': 'Get the deposit address',
   'sendExactly': 'Send exactly {amount} {token} on {chain}',
   'depositAddress': 'Deposit address',
+  'totalAmount': 'Total amount',
   'copy': 'Copy',
   'copyAddress': 'Copy address',
   'copied': 'Copied',
@@ -67,6 +69,8 @@ const Map<String, String> paystraterStringsEn = {
   'network': 'Network',
   'chainId': 'Chain ID',
   'agentTitle': 'Pay with your AI agent',
+  'agentStartHint':
+      'Create a one-time prompt for your agent. It will pay within your limits.',
   'agentHint':
       'Give this prompt to your agent. It pays within your limits, and this page updates when it does.',
   'copyPrompt': 'Copy prompt',

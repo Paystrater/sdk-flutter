@@ -930,7 +930,7 @@ class _Body extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _title(t['agentTitle'], hidden: true),
-              Text(t['agentHint'], style: s.muted),
+              Text(t['agentStartHint'], style: s.muted),
               const SizedBox(height: 12),
               if (_actionError != null) _actionError!,
               _Button(
@@ -1271,7 +1271,7 @@ class _TransferFormState extends State<_TransferForm> {
         if (_problem == FieldProblem.chain)
           Padding(
               padding: const EdgeInsets.only(top: 6),
-              child: Text(t['chooseChain'], style: s.error)),
+              child: Text(t['chooseChainRequired'], style: s.error)),
         const SizedBox(height: 12),
       ],
       _Field(
@@ -1405,11 +1405,32 @@ class _DepositViewState extends State<_DepositView> {
     final chain = d.chainName ?? '';
     final link = _link;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      widget.title(t.fill('sendExactly', {
-        'amount': formatAmount(d.amount),
-        'token': d.tokenTicker,
-        'chain': chain
-      })),
+      // What to send, as a calm callout in the success tones rather than a large heading
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Semantics(
+          header: true,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+                color: s.theme.colorSuccessSoft,
+                borderRadius:
+                    BorderRadius.circular(s.theme.borderRadiusSurface)),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                  t.fill('sendExactly', {
+                    'amount': formatAmount(d.amount),
+                    'token': d.tokenTicker,
+                    'chain': chain
+                  }),
+                  style: s.strong.copyWith(
+                      fontSize: 14,
+                      height: 20 / 14,
+                      color: s.theme.colorSuccess)),
+            ),
+          ),
+        ),
+      ),
       if (isPositiveAmount(d.fee))
         Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -1423,13 +1444,16 @@ class _DepositViewState extends State<_DepositView> {
           Text(t['depositAddress'], style: s.muted),
           const SizedBox(height: 6),
           Text(d.depositAddress, style: s.mono),
+          const SizedBox(height: 12),
+          Text(t['totalAmount'], style: s.muted),
           const SizedBox(height: 6),
           Row(children: [
+            // The brand text colour, which follows the merchant's colorPrimary and dark mode
             Expanded(
                 child: Text('${formatAmount(d.amount)} ${d.tokenTicker}',
                     style: s.strong.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: s.theme.colorText))),
+                        color: s.theme.colorPrimaryText))),
             _CopyLink(label: t['copyAmount'], value: d.amount, t: t, s: s),
           ]),
         ]),
