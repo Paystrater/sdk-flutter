@@ -184,6 +184,66 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets(
+      'keeps How to connect your AI agent closed until tapped, with the sandbox server on a test key',
+      (tester) async {
+    final opened = <String>[];
+    await tester.pumpWidget(host(PaystraterCheckout(
+      paymentId: id,
+      publishableKey: 'pk_test_x',
+      api: FakeApi(read: () => okPayment()),
+      openUrl: (url) async {
+        opened.add(url);
+        return true;
+      },
+    )));
+    await tester.pump();
+    await tester.tap(find.text('Pay with an AI agent'));
+    await tester.pump();
+    expect(find.text('How to connect your AI agent'), findsOneWidget);
+    expect(find.text('staging-agentic.paystrater.com/mcp'), findsNothing);
+    await tester.tap(find.text('How to connect your AI agent'));
+    await tester.pumpAndSettle();
+    expect(find.text('staging-agentic.paystrater.com/mcp'), findsOneWidget);
+    expect(
+        find.textContaining('Prefer a separate wallet for your agent?',
+            findRichText: true),
+        findsOneWidget);
+    final copied = <Object?>[];
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied.add(call.arguments);
+      return null;
+    });
+    await tester.ensureVisible(find.text('Copy'));
+    await tester.tap(find.text('Copy'));
+    await tester.pump();
+    await tester.pump();
+    expect(copied, [
+      {'text': 'https://staging-agentic.paystrater.com/mcp'}
+    ]);
+    expect(find.text('Copied'), findsOneWidget);
+    await tester.ensureVisible(find.text('Read the full guide'));
+    await tester.tap(find.text('Read the full guide'));
+    await tester.pump();
+    expect(opened, ['https://paystrater.com/mcp']);
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('shows the live MCP server on a live key', (tester) async {
+    await tester.pumpWidget(host(PaystraterCheckout(
+        paymentId: id,
+        publishableKey: 'pk_live_x',
+        api: FakeApi(read: () => okPayment(), keyMode: KeyMode.live))));
+    await tester.pump();
+    await tester.tap(find.text('Pay with an AI agent'));
+    await tester.pump();
+    await tester.tap(find.text('How to connect your AI agent'));
+    await tester.pumpAndSettle();
+    expect(find.text('agentic.paystrater.com/mcp'), findsOneWidget);
+    expect(find.textContaining('staging-agentic'), findsNothing);
+  });
+
   testWidgets('goes back from the AI agent step to the methods',
       (tester) async {
     await tester.pumpWidget(host(PaystraterCheckout(
