@@ -1,3 +1,7 @@
+## 0.1.0-dev.11
+
+- Pay with Paystrater speaks of approving in the app rather than a PIN, since the app also approves with fingerprint and Face ID
+
 ## 0.1.0-dev.10
 
 - The AI agent step has a "How to connect your AI agent" section, closed until tapped: four short steps, the MCP server URL with Copy (the sandbox server on a test key), a note on agent wallets and a link to the full guide. New strings: agentConnect*, agentWallet*, agentGuide
