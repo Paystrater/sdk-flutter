@@ -920,6 +920,8 @@ class _Body extends StatelessWidget {
                       onPressed: () =>
                           Clipboard.setData(ClipboardData(text: prompt))),
                 ),
+                const SizedBox(height: 12),
+                _AgentConnect(c: c, t: t, s: s, open: open),
                 if (_actionError != null) ...[
                   const SizedBox(height: 12),
                   _actionError!,
@@ -938,6 +940,8 @@ class _Body extends StatelessWidget {
                   s: s,
                   disabled: c.busy,
                   onPressed: () => unawaited(c.startAgentic())),
+              const SizedBox(height: 12),
+              _AgentConnect(c: c, t: t, s: s, open: open),
               const SizedBox(height: 12),
               _BackRow(
                   method: t['methodAgentic'],
@@ -2058,4 +2062,219 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 
   @override
   bool shouldRelayout(_MenuLayout old) => old.anchor != anchor;
+}
+
+/// Where a customer connects their own AI agent: the MCP server follows the
+/// key's mode, so a test key points at the sandbox.
+const _agentMcpLive = 'https://agentic.paystrater.com/mcp';
+const _agentMcpTest = 'https://staging-agentic.paystrater.com/mcp';
+const _agentGuideUrl = 'https://paystrater.com/mcp';
+
+/// "How to connect your AI agent": closed until the customer opens it.
+class _AgentConnect extends StatefulWidget {
+  const _AgentConnect(
+      {required this.c, required this.t, required this.s, required this.open});
+
+  final Checkout c;
+  final PaystraterStrings t;
+  final _Styles s;
+  final Future<bool> Function(String url) open;
+
+  @override
+  State<_AgentConnect> createState() => _AgentConnectState();
+}
+
+class _AgentConnectState extends State<_AgentConnect> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.t;
+    final s = widget.s;
+    final theme = s.theme;
+    final url = widget.c.mode == KeyMode.test ? _agentMcpTest : _agentMcpLive;
+    final text = s.body
+        .copyWith(fontSize: 13, height: 19 / 13, color: theme.colorTextMuted);
+    final lead =
+        text.copyWith(fontWeight: FontWeight.w600, color: theme.colorText);
+    final radius = BorderRadius.circular(theme.borderRadiusSurface);
+    Widget step(int n, String title, String body, [Widget? extra]) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                  color: theme.colorPrimarySoft, shape: BoxShape.circle),
+              child: Text('$n',
+                  style: s.strong.copyWith(
+                      fontSize: 12, height: 1, color: theme.colorPrimaryText)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text.rich(
+                        TextSpan(children: [
+                          TextSpan(text: title, style: lead),
+                          TextSpan(text: ' $body'),
+                        ]),
+                        style: text),
+                    if (extra != null) ...[const SizedBox(height: 8), extra],
+                  ]),
+            ),
+          ],
+        );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+          border: Border.all(color: theme.colorBorder), borderRadius: radius),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Semantics(
+          button: true,
+          expanded: _expanded,
+          child: _Tap(
+            s: s,
+            radius: theme.borderRadiusSurface,
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(children: [
+                  Expanded(
+                      child: Text(t['agentConnectTitle'],
+                          style: s.body.copyWith(
+                              fontSize: 14,
+                              height: 20 / 14,
+                              fontWeight: FontWeight.w500,
+                              color: theme.colorText))),
+                  Transform.rotate(
+                    angle: _expanded ? -1.5708 : 1.5708,
+                    child: CheckoutIconView(CheckoutIcon.chevronRight,
+                        color: theme.colorTextMuted, size: 16, stroke: 1.75),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 150),
+          alignment: Alignment.topCenter,
+          child: !_expanded
+              ? const SizedBox(width: double.infinity)
+              : DecoratedBox(
+                  decoration: BoxDecoration(
+                      border:
+                          Border(top: BorderSide(color: theme.colorBorder))),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          step(
+                              1,
+                              t['agentConnectStep1Title'],
+                              t['agentConnectStep1'],
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                    color: theme.colorSurface,
+                                    border:
+                                        Border.all(color: theme.colorBorder),
+                                    borderRadius: BorderRadius.circular(
+                                        theme.borderRadius)),
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(12, 6, 6, 6),
+                                  child: Row(children: [
+                                    Expanded(
+                                        // Without https:// so it fits a phone; Copy copies the full URL
+                                        child: Text(
+                                            url.replaceFirst('https://', ''),
+                                            style:
+                                                s.mono.copyWith(fontSize: 12))),
+                                    const SizedBox(width: 8),
+                                    _CopyLink(
+                                        label: t['copy'],
+                                        value: url,
+                                        t: t,
+                                        s: s),
+                                  ]),
+                                ),
+                              )),
+                          const SizedBox(height: 12),
+                          step(2, t['agentConnectStep2Title'],
+                              t['agentConnectStep2']),
+                          const SizedBox(height: 12),
+                          step(3, t['agentConnectStep3Title'],
+                              t['agentConnectStep3']),
+                          const SizedBox(height: 12),
+                          step(4, t['agentConnectStep4Title'],
+                              t['agentConnectStep4']),
+                          const SizedBox(height: 16),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                                color: theme.colorPrimarySoft,
+                                borderRadius: radius),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 12),
+                              child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(t['agentWalletTitle'],
+                                        style: s.strong.copyWith(
+                                            fontSize: 12,
+                                            height: 16 / 12,
+                                            color: theme.colorPrimaryText)),
+                                    const SizedBox(height: 6),
+                                    Text.rich(
+                                        TextSpan(children: [
+                                          TextSpan(
+                                              text: t['agentWalletLead'],
+                                              style: lead.copyWith(
+                                                  fontWeight: FontWeight.w500)),
+                                          TextSpan(
+                                              text: ' ${t['agentWalletBody']}'),
+                                        ]),
+                                        style: text.copyWith(
+                                            color: theme.colorTextBody)),
+                                    const SizedBox(height: 6),
+                                    Text(t['agentWalletLimits'],
+                                        style: text.copyWith(
+                                            fontSize: 12, height: 17 / 12)),
+                                  ]),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Semantics(
+                              link: true,
+                              child: _Tap(
+                                s: s,
+                                onTap: () =>
+                                    unawaited(widget.open(_agentGuideUrl)),
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 6),
+                                  child: Text(t['agentGuide'],
+                                      style: s.body.copyWith(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: theme.colorPrimaryText)),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ]),
+                  ),
+                ),
+        ),
+      ]),
+    );
+  }
 }
