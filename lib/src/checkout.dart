@@ -260,23 +260,14 @@ class Checkout extends ChangeNotifier {
     return _stageFor(p, chosen, methods);
   }
 
-  bool get _expiredWithMoney {
+  /// Expired while short of the amount, as the server reports it: a return
+  /// link is emailed. An amount that covers the payment completes it instead.
+  bool get underpaid {
     final t = _payment?.transferToPay;
     return _payment?.status == 'expired' &&
         t != null &&
         isPositiveAmount(t.receivedAmount);
   }
-
-  /// Expired with less than the amount received: a return link is emailed.
-  bool get underpaid =>
-      _expiredWithMoney &&
-      (compareAmounts(_payment!.transferToPay!.receivedAmount!,
-                  _payment!.transferToPay!.expectedAmount) ??
-              0) <
-          0;
-
-  /// Expired, and the whole amount arrived after the deadline.
-  bool get arrivedLate => _expiredWithMoney && !underpaid;
 
   // ---- lifecycle ----
 

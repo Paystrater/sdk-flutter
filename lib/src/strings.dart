@@ -102,11 +102,10 @@ const Map<String, String> paystraterStringsEn = {
   'statusExpired': 'This payment has expired',
   'statusExpiredHint':
       'Nothing arrived in time, so nothing was taken. Start again from {merchant}.',
+  'statusExpiredTransferHint':
+      'Don\'t send money to this address any more: it can\'t be credited or returned. Start again from {merchant}.',
   'statusUnderpaid': 'You sent less than the amount',
   'statusUnderpaidHint':
-      'Your funds are safe. We\'ve emailed you a link to get them back.',
-  'statusLate': 'Your transfer arrived after the payment expired',
-  'statusLateHint':
       'Your funds are safe. We\'ve emailed you a link to get them back.',
   'statusCancelled': 'This payment was cancelled',
   'statusCancelledHint': '{merchant} cancelled it. Nothing more to pay here.',

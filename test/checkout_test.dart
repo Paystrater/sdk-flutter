@@ -145,7 +145,7 @@ void main() {
     c.dispose();
   });
 
-  testWidgets('tells underpaid from late from an empty expiry', (tester) async {
+  testWidgets('tells underpaid from an empty expiry', (tester) async {
     Map<String, Object?> expired(String? received) => {
           'status': 'expired',
           'method': 'transfer_to_pay',
@@ -155,14 +155,14 @@ void main() {
           },
         };
     final short = make(FakeApi(read: () => okPayment(expired('10'))))..start();
-    final lateOne = make(FakeApi(read: () => okPayment(expired('25.25'))))
+    // Topped up before its return is confirmed: still the return the server offers
+    final toppedUp = make(FakeApi(read: () => okPayment(expired('25.25'))))
       ..start();
     final none = make(FakeApi(read: () => okPayment(expired(null))))..start();
     await tester.pump();
-    expect([short.underpaid, short.arrivedLate], [true, false]);
-    expect([lateOne.underpaid, lateOne.arrivedLate], [false, true]);
-    expect([none.underpaid, none.arrivedLate], [false, false]);
-    for (final c in [short, lateOne, none]) {
+    expect([short.underpaid, toppedUp.underpaid], [true, true]);
+    expect(none.underpaid, isFalse);
+    for (final c in [short, toppedUp, none]) {
       expect(c.stage, Stage.finalStatus);
       c.dispose();
     }
