@@ -1,3 +1,8 @@
+## 0.1.0-dev.12
+
+- An expired Transfer to Pay tells the customer not to send money to the address any more, and no longer says a late transfer is returned by email. New string: `statusExpiredTransferHint`
+- Breaking: `Checkout.arrivedLate` and the strings `statusLate` and `statusLateHint` are removed. The checkout only shows what the server reports: an expired payment that received money is `underpaid`
+
 ## 0.1.0-dev.11
 
 - Pay with Paystrater speaks of approving in the app rather than a PIN, since the app also approves with fingerprint and Face ID

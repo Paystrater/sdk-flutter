@@ -205,7 +205,6 @@ String _statusLine(Checkout c, PaystraterStrings t) {
       final s = c.payment?.status;
       if (s == 'succeeded') return t['statusSucceeded'];
       if (c.underpaid) return t['statusUnderpaid'];
-      if (c.arrivedLate) return t['statusLate'];
       if (s == 'expired') return t['statusExpired'];
       if (s == 'cancelled') return t['statusCancelled'];
       return t['statusFailed'];
@@ -1606,13 +1605,13 @@ class _Result extends StatelessWidget {
     } else if (c.underpaid) {
       heading = t['statusUnderpaid'];
       hint = t['statusUnderpaidHint'];
-    } else if (c.arrivedLate) {
-      heading = t['statusLate'];
-      hint = t['statusLateHint'];
-      tone = theme.colorTextMuted;
     } else if (p.status == 'expired') {
       heading = t['statusExpired'];
-      hint = t.fill('statusExpiredHint', {'merchant': merchant});
+      hint = t.fill(
+          p.method == 'transfer_to_pay'
+              ? 'statusExpiredTransferHint'
+              : 'statusExpiredHint',
+          {'merchant': merchant});
       tone = theme.colorTextMuted;
     } else if (p.status == 'cancelled') {
       heading = t['statusCancelled'];
@@ -1647,10 +1646,7 @@ class _Result extends StatelessWidget {
       if (hint != null && hint.isNotEmpty)
         Text(hint[0].toUpperCase() + hint.substring(1),
             style: s.muted, textAlign: TextAlign.center),
-      if (p.status == 'expired' &&
-          !c.underpaid &&
-          !c.arrivedLate &&
-          onStartAgain != null) ...[
+      if (p.status == 'expired' && !c.underpaid && onStartAgain != null) ...[
         const SizedBox(height: 12),
         _Button(
             label: t['startAgain'],
